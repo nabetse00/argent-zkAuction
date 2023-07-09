@@ -3,14 +3,9 @@ import { Wallet, Provider, Contract, utils } from "zksync-web3";
 import * as hre from "hardhat";
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import * as ethers from "ethers";
-import { COOL_DOWN_DURATION, deployContract, estimateGreeterGas, fundAccount, waitForCoolDown as waitForCoolDown } from "./utils";
+import { COOL_DOWN_DURATION, PRIVATE_KEY, deployContract, estimateGreeterGas, fundAccount, waitForCoolDown as waitForCoolDown } from "./utils";
 
-// load env file
-import dotenv from "dotenv";
-dotenv.config();
 
-// load wallet private key from env file
-const PRIVATE_KEY = process.env.RICH_WALLET_PRIVATE_KEY || "";
 
 describe("AuctionPaymaster", function () {
     let provider: Provider;
@@ -73,9 +68,9 @@ describe("AuctionPaymaster", function () {
         ]);
 
         // mock proxis 
-        ethUsd = await deployContract(deployer, "MyProxy", [ethers.utils.parseEther("2000")]);
-        usdcUsd = await deployContract(deployer, "MyProxy", [ethers.utils.parseEther("1.0001")]);
-        daiUsd = await deployContract(deployer, "MyProxy", [ethers.utils.parseEther("0.9998")]);
+        ethUsd = await deployContract(deployer, "MyProxy", [ethers.utils.parseEther("2000"), ethers.constants.AddressZero]);
+        usdcUsd = await deployContract(deployer, "MyProxy", [ethers.utils.parseEther("1.0001"), ethers.constants.AddressZero]);
+        daiUsd = await deployContract(deployer, "MyProxy", [ethers.utils.parseEther("0.9998"), ethers.constants.AddressZero]);
 
         const setProxy = paymaster.setDapiProxy(usdcUsd.address, daiUsd.address, ethUsd.address)
         await (await setProxy).wait()

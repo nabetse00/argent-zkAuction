@@ -43,9 +43,50 @@ If you do not start the zkSync local environment, the tests will fail with error
 - [Discord](https://discord.gg/nMaPGrDDwk)
 
 
+## run foundry tests
+first install forge (on windows use WSL2):
+```console
+curl -L https://foundry.paradigm.xyz | bash
+source ~/.bashrc
+foundryup
+```
+
+Check your instalation:
+```
+forge --version
+```
+
+you should get:
+```console
+forge 0.X.X (<hash> <timestamp>)
+```
+
+```console
+yarn add --dev @nomicfoundation/hardhat-foundry
+```
+and  import it in your Hardhat config:
+```ts
+import { HardhatUserConfig } from "hardhat/config";
+
+import "@nomicfoundation/hardhat-foundry";
+
+// rest of hardhat.config.ts file
+```
+
+then:
+```console
+forge test --via-ir
+```
+
+See [forge docs](https://book.getfoundry.sh/reference/forge/forge-test)
+for more details.
+
+
 ## Run test on localtestnet
 
 Contracts are tested with a localnet
+(see [zkSync docs](https://era.zksync.io/docs/tools/hardhat/testing.html)
+for more details)
 
 Installing the testing environment (On windows os please use a ubuntu WSL2 install) 
 
@@ -69,7 +110,11 @@ WALLET_PRIVATE_KEY="your private key here"
 # local testnet RICHWALLET
 RICH_WALLET_ADDRESS="0x36615Cf349d7F6344891B1e7CA7C72883F5dc049"
 RICH_WALLET_PRIVATE_KEY="0x7726827caac94a7f9e1b160f7ea819f172f7b6f9d2a97f992c38edeab82d4110"
+
+# [OPTIONAL] COINMARKET
+COINMARKETCAP_API_KEY="your coinmarketcap api key here for fiat estimations"
 ```
+
 
 and run:
 
@@ -77,10 +122,17 @@ and run:
 yarn test
 ```
 
-Gas estimations should appear:
+Gas estimations and test results should appear:
 ```
 ... ouput ...
-Greeter deployment is estimated to cost 0.00004848225 ETH
-AuctionPaymaster deployment is estimated to cost 0.000057455 ETH
+Greeter deployment is estimated to cost 0.00004848225 ETH [ ~ $0.0906 ]
+AuctionPaymaster deployment is estimated to cost 0.000057455 ETH [ ~ $0.1073 ]
+MyProxy deployment is estimated to cost 0.00005049675 ETH [ ~ $0.0943 ]
 ... output ...
+    ✔ user with Dai token can reupdate message if cooldown time has passed, fee payed in dai (15384ms)
+    ✔ should allow owner to withdraw all funds (1037ms)
+    ✔ should prevent non-owners from withdrawing funds (259ms)
+  7 passing (1m)
+
+Done in 70.78s.
 ```

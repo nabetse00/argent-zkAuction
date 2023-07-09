@@ -1,7 +1,17 @@
 import { Contract, Provider, Wallet, utils } from "zksync-web3";
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import * as ethers from "ethers";
+import CoinMarketCap from "coinmarketcap-api";
+import { BigNumber } from "ethers";
 
+// load env file
+import dotenv from "dotenv";
+dotenv.config();
+
+// load wallet private key from env file
+export const PRIVATE_KEY = process.env.RICH_WALLET_PRIVATE_KEY || "";
+export const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || "";
+const coinMarketCapclient = new CoinMarketCap(COINMARKETCAP_API_KEY)
 export const COOL_DOWN_DURATION = 10; // 10 sec
 
 export async function deployContract(
@@ -13,7 +23,8 @@ export async function deployContract(
 
     const deploymentFee = await deployer.estimateDeployFee(artifact, params);
     const parsedFee = ethers.utils.formatEther(deploymentFee.toString());
-    console.log(`${contract} deployment is estimated to cost ${parsedFee} ETH`);
+    const parsedFeeUSD = await etherToUSD(deploymentFee);
+    console.log(`${contract} deployment is estimated to cost ${parsedFee} ETH [ ~ $${parsedFeeUSD} ]`);
     const dep = await deployer.deploy(artifact, params);
     return await dep.deployed();
 }
@@ -39,13 +50,13 @@ export async function estimateGreeterGas(provider: Provider, richWallet: Wallet,
         "new updated greeting",
         {
             customData: {
+                // TODO make an estimation of gasPerPubData
                 gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
                 paymasterParams: utils.getPaymasterParams(paymaster.address, {
                     type: "ApprovalBased",
                     token: token.address,
                     // Set a large allowance just for estimation
                     minimalAllowance: ethers.utils.parseEther("1000"),
-                    // Empty bytes as testnet paymaster does not use innerInput
                     innerInput: new Uint8Array(),
                 }),
             },
@@ -76,4 +87,10 @@ export async function waitForCoolDown() {
 
 export async function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
+}
+
+export async function etherToUSD(amount: BigNumber): Promise<string> {
+    const getQuote = await coinMarketCapclient.getQuotes({ symbol: 'ETH' });
+    const quote = getQuote.data["ETH"].quote['USD'].price;
+    return (parseFloat(ethers.utils.formatEther(amount)) * parseFloat(quote)).toFixed(4);
 }

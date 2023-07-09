@@ -1,9 +1,12 @@
 import { HardhatUserConfig } from "hardhat/config";
 
+
 import "@matterlabs/hardhat-zksync-deploy";
 import "@matterlabs/hardhat-zksync-solc";
 
 import "@matterlabs/hardhat-zksync-verify";
+
+import "@nomicfoundation/hardhat-foundry";
 
 // dynamically changes endpoints for local tests
 const zkSyncTestnet =
