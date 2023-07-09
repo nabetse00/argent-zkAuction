@@ -43,8 +43,14 @@ If you do not start the zkSync local environment, the tests will fail with error
 - [Discord](https://discord.gg/nMaPGrDDwk)
 
 
-## run foundry tests
-first install forge (on windows use WSL2):
+## Run foundry tests
+
+Foundry test are quick and include fuzzing.
+We use them for validating contract functionality and logic.
+Note that foundry test are not suitable for paymaster contracts
+since they are specific to zkSync EVM and must be run on a [local testnet](#run-local-testnet-tests).
+
+First install forge (on windows use WSL2):
 ```console
 curl -L https://foundry.paradigm.xyz | bash
 source ~/.bashrc
@@ -73,16 +79,25 @@ import "@nomicfoundation/hardhat-foundry";
 // rest of hardhat.config.ts file
 ```
 
+To complete the setup, run npx hardhat init-foundry. T
+his task will create a foundry.toml file with the right configuration and install 
+forge-std.
+
+```console
+npx hardhat init-foundry
+forge install foundry-rs/forge-std
+```
+
 then:
 ```console
 forge test --via-ir
 ```
 
 See [forge docs](https://book.getfoundry.sh/reference/forge/forge-test)
+and [Hardhat Integrating with Foundry](https://hardhat.org/hardhat-runner/docs/advanced/hardhat-and-foundry)
 for more details.
 
-
-## Run test on localtestnet
+## Run local testnet tests
 
 Contracts are tested with a localnet
 (see [zkSync docs](https://era.zksync.io/docs/tools/hardhat/testing.html)
