@@ -13,6 +13,8 @@ contract AuctionFactoryTest is Test, ERC721Holder {
     uint256 constant MIN_AUCTION_DURATION = 1 hours;
     uint256 constant MAX_AUCTION_DURATION = 7 days;
     uint256 constant MIN_STARTING_PRICE = 0.01 ether;
+    uint256 public constant FLAT_FEE_USDC = 0.5 ether * 10 ** (6 - 18);
+    uint256 public constant FLAT_FEE_DAI = 0.5 ether;
 
     MyERC20 usdc;
     MyERC20 dai;
@@ -55,10 +57,13 @@ contract AuctionFactoryTest is Test, ERC721Holder {
         uint256 _buyItNowPrice
     ) public {
         address bidToken;
+        uint256 fee;
         if (_bidTokenSel % 2 == 0) {
             bidToken = address(usdc);
+            fee = FLAT_FEE_USDC;
         } else {
             bidToken = address(dai);
+            fee = FLAT_FEE_DAI;
         }
 
         uint256 tenPowDecimals = 10 ** (MyERC20(bidToken).decimals());
@@ -79,6 +84,10 @@ contract AuctionFactoryTest is Test, ERC721Holder {
             _startingPrice * 100,
             _startingPrice * 200
         );
+
+        // approve auction Factory for fees
+        MyERC20(bidToken).mint(address(this), fee);
+        MyERC20(bidToken).approve(address(auctionFactory), fee);
         auctionFactory.createAuction(
             bidToken,
             _itemOwner,
@@ -141,7 +150,9 @@ contract AuctionFactoryTest is Test, ERC721Holder {
             _startingPrice * 100,
             _startingPrice * 200
         );
-        vm.expectRevert("[Auction Factory] Token for auction must be USDC or DAI");
+        vm.expectRevert(
+            "[Auction Factory] Token for auction must be USDC or DAI"
+        );
         auctionFactory.createAuction(
             bidToken,
             _itemOwner,
@@ -150,5 +161,25 @@ contract AuctionFactoryTest is Test, ERC721Holder {
             _buyItNowPrice,
             _duration
         );
+        vm.expectRevert("ERC20: insufficient allowance");
+        auctionFactory.createAuction(
+            address(usdc),
+            _itemOwner,
+            itemUri,
+            _startingPrice,
+            _buyItNowPrice,
+            _duration
+        );
+        usdc.mint(address(this), FLAT_FEE_USDC);
+        usdc.approve(address(auctionFactory), FLAT_FEE_USDC);
+        auctionFactory.createAuction(
+            address(usdc),
+            _itemOwner,
+            itemUri,
+            _startingPrice,
+            _buyItNowPrice,
+            _duration
+        );
+        assertNotEq(address(auctionFactory.getAuctions()[0]), address(0));
     }
 }

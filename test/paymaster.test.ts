@@ -3,7 +3,7 @@ import { Wallet, Provider, Contract, utils } from "zksync-web3";
 import * as hre from "hardhat";
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import * as ethers from "ethers";
-import { COOL_DOWN_DURATION, PRIVATE_KEY, deployContract, estimateGreeterGas, fundAccount, waitForCoolDown as waitForCoolDown } from "./utils";
+import { PRIVATE_KEY, deployContract, estimateGreeterGas, fundAccount } from "./utils";
 
 
 
@@ -41,7 +41,7 @@ describe("AuctionPaymaster", function () {
         usdc = await deployContract(deployer, "MyERC20", [
             "USDC",
             "USDC",
-            18,
+            6,
         ]);
 
         // mock dai
@@ -64,7 +64,7 @@ describe("AuctionPaymaster", function () {
 
         // paymaster contract
         paymaster = await deployContract(deployer, "AuctionPaymaster", [
-            ownerWallet.address, usdc.address, dai.address, greeter.address, COOL_DOWN_DURATION
+            ownerWallet.address, usdc.address, dai.address, greeter.address
         ]);
 
         // mock proxis 
@@ -140,7 +140,7 @@ describe("AuctionPaymaster", function () {
         expect(userInitialETHBalance).to.eql(finalETHBalance);
         expect(userInitialTokenBalance).to.eql(finalUserTokenBalance);
 
-        // console.log(`user Paid ${ethers.utils.formatEther(finalUserTokenBalance.sub(userInitialTokenBalance))}`)
+        console.log(`user Paid ${ethers.utils.formatEther(finalUserTokenBalance.sub(userInitialTokenBalance))}`)
 
         // add contract to allowed list
 
@@ -163,8 +163,7 @@ describe("AuctionPaymaster", function () {
         expect(initialPaymasterBalance.gt(finalPaymasterBalance)).to.be.true;
         expect(userInitialETHBalance).to.eql(finalETHBalance);
         expect(userInitialTokenBalance.gt(finalUserTokenBalance)).to.be.true;
-        // console.log(`user Paid ${ethers.utils.formatEther(finalUserTokenBalance.sub(userInitialTokenBalance))}`)
-        await waitForCoolDown();
+        console.log(`user Paid ${ethers.utils.formatUnits(finalUserTokenBalance.sub(userInitialTokenBalance), 6)}`)
     });
 
     it("user with USDC token can update message, fee payed in usdc", async function () {
@@ -196,7 +195,7 @@ describe("AuctionPaymaster", function () {
         expect(initialPaymasterBalance.gt(finalPaymasterBalance)).to.be.true;
         expect(userInitialETHBalance).to.eql(finalETHBalance);
         expect(userInitialTokenBalance.gt(finalUserTokenBalance)).to.be.true;
-        // console.log(`user Paid ${ethers.utils.formatEther(finalUserTokenBalance.sub(userInitialTokenBalance))}`)
+        console.log(`user Paid ${ethers.utils.formatUnits(finalUserTokenBalance.sub(userInitialTokenBalance), 6)}`)
     });
 
     it("user with Dai token can update message, fee payed in dai", async function () {
@@ -222,50 +221,7 @@ describe("AuctionPaymaster", function () {
         expect(initialPaymasterBalance.gt(finalPaymasterBalance)).to.be.true;
         expect(userInitialETHBalance).to.eql(finalETHBalance);
         expect(userInitialTokenBalance.gt(finalUserTokenBalance)).to.be.true;
-    });
-
-    it("user with Dai token can reupdate message if cooldown time has passed, fee payed in dai", async function () {
-        const txSetGreeter = await greeter.connect(ownerWallet).setGreeting("DAI test!");
-        await txSetGreeter.wait();
-        const initialMintAmount = ethers.utils.parseEther("3");
-        const success = await dai.mint(otherUserWallet.address, initialMintAmount);
-        await success.wait();
-
-        const userInitialTokenBalance = await dai.balanceOf(otherUserWallet.address);
-        const userInitialETHBalance = await otherUserWallet.getBalance();
-        const initialPaymasterBalance = await provider.getBalance(
-            paymaster.address,
-        );
-
-        try {
-            await executeGreetingTransaction(greeter, otherUserWallet, richTokenWallet, dai, daiUsd);
-        } catch (e) {
-            expect(e.message).to.include("Transaction cool down not met");
-        }
-
-        let finalETHBalance = await otherUserWallet.getBalance();
-        let finalUserTokenBalance = await dai.balanceOf(otherUserWallet.address);
-        let finalPaymasterBalance = await provider.getBalance(paymaster.address);
-
-        expect(await greeter.greet()).to.equal("DAI test!");
-        expect(initialPaymasterBalance).to.eql(finalPaymasterBalance);
-        expect(userInitialETHBalance).to.eql(finalETHBalance);
-        expect(userInitialTokenBalance).to.eql(finalUserTokenBalance);
-
-        await waitForCoolDown();
-
-        await executeGreetingTransaction(greeter, otherUserWallet, richTokenWallet,dai, daiUsd);
-
-        finalETHBalance = await otherUserWallet.getBalance();
-        finalUserTokenBalance = await dai.balanceOf(otherUserWallet.address);
-        finalPaymasterBalance = await provider.getBalance(paymaster.address);
-
-        expect(await greeter.greet()).to.equal("Hola, mundo!");
-        expect(initialPaymasterBalance.gt(finalPaymasterBalance)).to.be.true;
-        expect(userInitialETHBalance).to.eql(finalETHBalance);
-        expect(userInitialTokenBalance.gt(finalUserTokenBalance)).to.be.true;
-
-
+        console.log(`user Paid ${ethers.utils.formatUnits(finalUserTokenBalance.sub(userInitialTokenBalance), 18)}`)
     });
 
     it("should allow owner to withdraw all funds", async function () {

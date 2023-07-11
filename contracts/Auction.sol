@@ -5,7 +5,13 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+/**
+ * @title Auction interface
+ * @author Nabetse
+ * @notice Config struct to avoid stack too deep errors
+ */
 interface IAuction {
     struct AuctionConfig {
         address owner;
@@ -26,7 +32,17 @@ interface IAuction {
     }
 }
 
-contract Auction is IAuction, ERC721Holder {
+/**
+ * @title Auction contract
+ * @author Nabetse
+ * @notice Auction contract suport a starting price, buy it now price.
+ * @notice Auction items represented has ERC721  NFTS.
+ * @notice Bid increments from ebay (see https://www.ebay.com/help/buying/bidding/automatic-bidding?id=4014)
+ * @notice step function in ether units.
+ * @notice Internal function changes bid increments to acomodate bidToken decimals (minimal 2 decimals)
+ * @notice Included rescue function allows tokens and eth retreival 120 day after bid end
+ */
+contract Auction is IAuction, ERC721Holder, ReentrancyGuard {
     using Math for uint256;
     // constants
     uint256 constant MIN_AUCTION_DURATION = 1 hours;
@@ -218,7 +234,7 @@ contract Auction is IAuction, ERC721Holder {
     function getHighestBid() public view returns (uint256) {
         return fundsByBidder[highestBidder];
     }
-    
+
     function placeBid(
         address _bidder,
         uint256 _tokenAmount
@@ -232,6 +248,7 @@ contract Auction is IAuction, ERC721Holder {
         onlyNotOwner
         onlyValidBidder(_bidder)
         onlyNotRescued
+        nonReentrant
         returns (bool success)
     {
         // sanity checks
@@ -244,7 +261,7 @@ contract Auction is IAuction, ERC721Holder {
             auctionItems.ownerOf(config.itemTokenId) == address(this),
             "[Auction] Auction contract is not the owner of item cannot bid"
         );
-        
+
         _transferToContract(_bidder, _tokenAmount);
 
         uint256 bidIncrement = _computeBidIcrement(highestBindingBid);
@@ -324,7 +341,7 @@ contract Auction is IAuction, ERC721Holder {
 
     function rescue(
         address payable receiver
-    ) public onlyEndedOrCanceled onlyAuctionFactory onlyNotRescued {
+    ) public onlyEndedOrCanceled onlyAuctionFactory onlyNotRescued nonReentrant {
         require(receiver != address(0));
         require(
             block.timestamp > (config.endTimestamp + 120 days),
@@ -345,7 +362,7 @@ contract Auction is IAuction, ERC721Holder {
         }
     }
 
-    function withdrawAll() public onlyEndedOrCanceled returns (bool success) {
+    function withdrawAll() public onlyEndedOrCanceled nonReentrant returns (bool success) {
         // withdraw all biders
         for (uint i = 0; i < biders.length; i++) {
             _withdraw(biders[i]);
@@ -355,7 +372,7 @@ contract Auction is IAuction, ERC721Holder {
         return true;
     }
 
-    function withdraw() public onlyEndedOrCanceled returns (bool success) {
+    function withdraw() public onlyEndedOrCanceled nonReentrant returns (bool success) {
         return _withdraw(msg.sender);
     }
 
@@ -368,10 +385,9 @@ contract Auction is IAuction, ERC721Holder {
         return increment;
     }
 
-
     function _withdraw(
         address to
-    ) internal onlyEndedOrCanceled returns (bool success) {
+    ) private onlyEndedOrCanceled returns (bool success) {
         address withdrawalAccount;
         uint256 withdrawalAmount;
 
@@ -471,7 +487,7 @@ contract Auction is IAuction, ERC721Holder {
         return (value * 10 ** (decimals)) / 1 ether;
     }
 
-    function _transferToContract(address from, uint256 tokenAmount) internal {
+    function _transferToContract(address from, uint256 tokenAmount) private {
         // transfer tokens to contract
         bool success = IERC20Metadata(bidToken).transferFrom(
             from,
@@ -481,7 +497,7 @@ contract Auction is IAuction, ERC721Holder {
         require(success, "[Auction] Transfer of Tokens from bidder failed.");
     }
 
-    function _transferItemTo(address to) internal {
+    function _transferItemTo(address to) private {
         // transfer item to bidder or owner if address is 0
         if (address(to) == address(0)) {
             to = config.owner;
@@ -497,7 +513,7 @@ contract Auction is IAuction, ERC721Holder {
         address _withdrawalAccount,
         uint256 _withdrawalAmount,
         address _to
-    ) internal {
+    ) private {
         fundsByBidder[_withdrawalAccount] -= _withdrawalAmount;
         if (_to == config.owner) {
             require(

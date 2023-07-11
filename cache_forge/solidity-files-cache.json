@@ -13,8 +13,8 @@
   },
   "files": {
     "contracts/Auction.sol": {
-      "lastModificationDate": 1689083100090,
-      "contentHash": "a35d81835cce3b381d4ab4e9053ee462",
+      "lastModificationDate": 1689088474700,
+      "contentHash": "54bef3f14f82536f77f63b81236acbc4",
       "sourceName": "contracts/Auction.sol",
       "solcConfig": {
         "settings": {
@@ -47,6 +47,7 @@
         }
       },
       "imports": [
+        "node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol",
         "node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol",
         "node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol",
         "node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol",
@@ -66,8 +67,8 @@
       }
     },
     "contracts/AuctionFactory.sol": {
-      "lastModificationDate": 1689083075280,
-      "contentHash": "e0395b4bb896b08e130a9c6b5e107b2e",
+      "lastModificationDate": 1689088503933,
+      "contentHash": "7c0a371ccd2b269380c364d311748bb6",
       "sourceName": "contracts/AuctionFactory.sol",
       "solcConfig": {
         "settings": {
@@ -103,6 +104,7 @@
         "contracts/Auction.sol",
         "contracts/AuctionItems.sol",
         "node_modules/@openzeppelin/contracts/access/Ownable.sol",
+        "node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol",
         "node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol",
         "node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol",
         "node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol",
@@ -128,8 +130,8 @@
       }
     },
     "contracts/AuctionItems.sol": {
-      "lastModificationDate": 1689083081420,
-      "contentHash": "c23efe7cb67f53145d5819b0d5371051",
+      "lastModificationDate": 1689086066401,
+      "contentHash": "f2b3f7874495d7916fc515ae02dd7ee1",
       "sourceName": "contracts/AuctionItems.sol",
       "solcConfig": {
         "settings": {
@@ -2517,6 +2519,48 @@
         }
       }
     },
+    "node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol": {
+      "lastModificationDate": 1688669622519,
+      "contentHash": "92f9448b23a90ea3bb932ee55cc3ccce",
+      "sourceName": "node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "metadata": {
+            "useLiteralContent": false,
+            "bytecodeHash": "ipfs",
+            "appendCBOR": true
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ]
+            }
+          },
+          "evmVersion": "paris",
+          "viaIR": true,
+          "libraries": {}
+        }
+      },
+      "imports": [],
+      "versionRequirement": "^0.8.0",
+      "artifacts": {
+        "ReentrancyGuard": {
+          "0.8.20+commit.a1b79de6.Linux.gcc": "ReentrancyGuard.sol/ReentrancyGuard.json"
+        }
+      }
+    },
     "node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol": {
       "lastModificationDate": 1688669622519,
       "contentHash": "a9d2146925da52142435d3bb8df53c3c",
@@ -3331,6 +3375,7 @@
         "lib/forge-std/src/console2.sol",
         "lib/forge-std/src/interfaces/IMulticall3.sol",
         "node_modules/@openzeppelin/contracts/access/Ownable.sol",
+        "node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol",
         "node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol",
         "node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol",
         "node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol",
@@ -3357,8 +3402,8 @@
       }
     },
     "test/AuctionFactory.t.sol": {
-      "lastModificationDate": 1689083152890,
-      "contentHash": "7f16e5137e4f291b91e1b3fdbc5274df",
+      "lastModificationDate": 1689095436234,
+      "contentHash": "b103eeb3bba5bc081dfeadecf9728778",
       "sourceName": "test/AuctionFactory.t.sol",
       "solcConfig": {
         "settings": {
@@ -3413,6 +3458,7 @@
         "lib/forge-std/src/console2.sol",
         "lib/forge-std/src/interfaces/IMulticall3.sol",
         "node_modules/@openzeppelin/contracts/access/Ownable.sol",
+        "node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol",
         "node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol",
         "node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol",
         "node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol",

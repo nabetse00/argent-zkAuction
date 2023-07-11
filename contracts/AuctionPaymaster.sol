@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import {IPaymaster, ExecutionResult, PAYMASTER_VALIDATION_SUCCESS_MAGIC} 
 from  "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymaster.sol";
@@ -16,7 +16,6 @@ import "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
  * @title AuctionPaymaster
  * @author Nabetse
  * @notice This contract only allow a list of contracts to call
- * @notice users must wait until COOL_DOWN_TIME has passed to use this paymaster
  * @notice This contract only allow USDC and DAI for fee payments
  * @notice Inspired by https://era.zksync.io/docs/dev/tutorials/api3-usd-paymaster-tutorial.html
  */
@@ -31,8 +30,6 @@ contract AuctionPaymaster is IPaymaster, Ownable {
     mapping(address => uint256) private usersCoolDowns;
     mapping(address => bool) private allowedContracts;
 
-    uint256 public immutable  COOL_DOWN_TIME;
-
     event UpdateAllowedContracts(address _target, bool _allowed);
 
     modifier onlyBootloader() {
@@ -44,15 +41,13 @@ contract AuctionPaymaster is IPaymaster, Ownable {
         _;
     }
 
-    constructor(address _owner, address _usdc, address _dai, address _contract, uint256 _coolDownDuration) {
+    constructor(address _owner, address _usdc, address _dai, address _contract) {
         require(_owner != address(0), "Zero address cannot be the owner");
         require(_contract != address(0), "Zero address cannot be an allowed contract");
-        require(_coolDownDuration > 0, "Zero cooldown duration not allowed");
         _addToAllowedContracts(_contract);
         _transferOwnership(_owner);
         allowedTokens[0] = _usdc;
         allowedTokens[1] = _dai;
-        COOL_DOWN_TIME = _coolDownDuration;
     }
 
     // Set dapi proxies for the allowed token/s
@@ -100,13 +95,9 @@ contract AuctionPaymaster is IPaymaster, Ownable {
             require(token == allowedTokens[0] || token == allowedTokens[1], "Invalid token should be DAI or USDC");
 
             // We verify that the user has provided enough allowance
-            // and COOL_DOWN_TIME
             address userAddress = address(uint160(_transaction.from));
             address targetContract = address(uint160(_transaction.to));
             require(allowedContracts[targetContract], "Contract Not allowed to use this paymaster");
-
-            uint256 currentTime = block.timestamp;
-            require( currentTime > usersCoolDowns[userAddress], "Transaction cool down not met");
             
             address thisAddress = address(this);
 
@@ -130,9 +121,11 @@ contract AuctionPaymaster is IPaymaster, Ownable {
                 _transaction.maxFeePerGas;
 
             // Calculate the required ERC20 tokens to be sent to the paymaster
-            // (Equal to the value of requiredETH)
+            // (Equal to the value of requiredETH) in TOKEN DECIMAL
 
-            uint256 requiredERC20 = (requiredETH * ETHUSDPrice)/TOKENUSDPrice;
+            uint256 decimals = IERC20Metadata(token).decimals();
+
+            uint256 requiredERC20 = (requiredETH * ETHUSDPrice)*(10**decimals)/(1 ether)/TOKENUSDPrice;
             
             //uint256 requiredERC20 = requiredETH; //* 2000e18)/10001e14;
             require(
@@ -164,8 +157,6 @@ contract AuctionPaymaster is IPaymaster, Ownable {
                 value: requiredETH
             }("");
             require(success, "Failed to transfer funds to the bootloader");
-            // update cool down timestamp
-            usersCoolDowns[userAddress] = currentTime + COOL_DOWN_TIME;
         } else {
             revert("Unsupported paymaster flow");
         }

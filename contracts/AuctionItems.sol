@@ -7,6 +7,12 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+/**
+ * @title zkSync Auction ERC721 tokens
+ * @author nabetse
+ * @notice base uri is set to ipfs://, frontends should replace it with 
+ * @notice a valid gateway-host like https://ipfs.io/ipfs
+ */
 contract ZkSyncAuctionItems is ERC721URIStorage, ERC721Burnable, Ownable {
     using Counters for Counters.Counter;
 
@@ -16,7 +22,7 @@ contract ZkSyncAuctionItems is ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function _baseURI() internal pure override returns (string memory) {
-        return "https://base.com/";
+        return "ipfs://";
     }
 
     function safeMint(address to, string memory uri) public onlyOwner returns(uint256){
