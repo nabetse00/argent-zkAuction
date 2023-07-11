@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -76,6 +76,8 @@ contract AuctionPaymaster is IPaymaster, Ownable {
     ) onlyBootloader external payable returns (bytes4 magic, bytes memory context) {
         // By default we consider the transaction as accepted.
         magic = PAYMASTER_VALIDATION_SUCCESS_MAGIC;
+        // returns a empty context
+        context = bytes("");
         require(
             _transaction.paymasterInput.length >= 4,
             "The standard paymaster input must be at least 4 bytes long"
@@ -87,7 +89,9 @@ contract AuctionPaymaster is IPaymaster, Ownable {
         if (paymasterInputSelector == IPaymasterFlow.approvalBased.selector) {
             // While the transaction data consists of address, uint256 and bytes data,
             // the data is not needed for this paymaster
-            (address token, uint256 amount, bytes memory data) = abi.decode(
+            (address token, uint256 amount, 
+            //bytes memory data
+            ) = abi.decode(
                 _transaction.paymasterInput[4:],
                 (address, uint256, bytes)
             );

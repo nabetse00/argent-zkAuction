@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -31,6 +31,7 @@ contract Auction is IAuction, ERC721Holder {
     // constants
     uint256 constant MIN_AUCTION_DURATION = 1 hours;
     uint256 constant MAX_AUCTION_DURATION = 7 days;
+    uint256 constant MIN_STARTING_PRICE = 0.01 ether;
     // bid tiers and bid increments in 18 decimals format (ethers)
     uint256[] public bidTiers = [
         0 ether,
@@ -56,12 +57,18 @@ contract Auction is IAuction, ERC721Holder {
         50 ether,
         100 ether
     ];
+
     // state
     AuctionConfig public config;
+    address public immutable auctionFactory;
     bool public canceled;
+    bool public ended;
+    bool public rescued;
+
     uint public highestBindingBid;
     address public highestBidder;
     mapping(address => uint256) public fundsByBidder;
+    address[] public biders;
     bool ownerHasWithdrawn;
     AuctionStatus public auctionStatus;
 
@@ -70,15 +77,15 @@ contract Auction is IAuction, ERC721Holder {
     // token for bidding should be a stable coin
 
     IERC721 public immutable auctionItems;
-    // auction items are nft
+    // auction items are ERC721 NFT
 
     // events
     event BidEvent(
         address bidder,
-        uint bid256,
+        uint256 bid,
         address highestBidder,
         uint256 highestBid,
-        uint highestBindingBid
+        uint256 highestBindingBid
     );
     event WithdrawalEvent(
         address withdrawer,
@@ -86,10 +93,20 @@ contract Auction is IAuction, ERC721Holder {
         uint amount
     );
     event CanceledEvent();
+    event BuytItNowEvent(address bider);
 
     event StatusChanged(AuctionStatus from, AuctionStatus to);
+    event NewBidder(address bider);
 
     // modifiers
+    modifier onlyAuctionFactory() {
+        require(msg.sender == auctionFactory, "[Auction] Only AuctionFactory");
+        _;
+    }
+    modifier onlyNotRescued() {
+        require(!rescued, "[Auction] Only not rescued Auction");
+        _;
+    }
     modifier onlyOwner() {
         require(msg.sender == config.owner, "[Auction] Only owner");
         _;
@@ -127,9 +144,14 @@ contract Auction is IAuction, ERC721Holder {
         _;
     }
 
+    modifier onlyNotEnded() {
+        require(!ended, "[Auction] Only not ended");
+        _;
+    }
+
     modifier onlyEndedOrCanceled() {
         require(
-            canceled || (block.timestamp > config.endTimestamp),
+            canceled || ended || (block.timestamp > config.endTimestamp),
             "[Auction] Only Ended or Canceled"
         );
         _;
@@ -158,18 +180,23 @@ contract Auction is IAuction, ERC721Holder {
             _auctionItems != address(0),
             "[Auction] Auction items for bids cannot be zero address"
         );
-        require(
-            _config.startingPrice > bidTiers[0],
-            "[Auction] Bid starting price cannot be 0"
-        );
-        require(
-            _config.buyItNowPrice >= _config.startingPrice,
-            "[Auction] Buy it now price must be greater than starting price"
-        );
+
+        if (_config.buyItNowPrice != 0) {
+            require(
+                _config.buyItNowPrice > _config.startingPrice,
+                "[Auction] Buy it now price must be greater than starting price"
+            );
+        }
         auctionStatus = AuctionStatus.INIT;
         config.owner = _config.owner;
         bidToken = IERC20Metadata(_bidToken);
         decimals = IERC20Metadata(_bidToken).decimals();
+
+        require(
+            _config.startingPrice >= _valueToTokens(MIN_STARTING_PRICE),
+            "[Auction] Bid starting price cannot be bellow MIN_STARTING_PRICE"
+        );
+
         auctionItems = IERC721(_auctionItems);
         // 'block.timestamp' actually refers to the timestamp of the whole batch that will be sent to L1.
         // zkSync team is planning to change this in the near future so that it returns the timestamp of the L2
@@ -178,15 +205,11 @@ contract Auction is IAuction, ERC721Holder {
         config.endTimestamp = block.timestamp + _duration;
         config.startingPrice = _config.startingPrice;
         config.buyItNowPrice = _config.buyItNowPrice;
+        // it may be better to hardcode auctionFactory address
+        auctionFactory = msg.sender;
         require(
-            auctionItems.ownerOf(_config.itemTokenId) == config.owner,
-            "[Auction] Only owner of an item can auction it"
-        );
-        // transfer item
-        auctionItems.safeTransferFrom(
-            config.owner,
-            address(this),
-            _config.itemTokenId
+            auctionItems.ownerOf(_config.itemTokenId) == auctionFactory,
+            "[Auction] sender must be the owner of the token"
         );
         config.itemTokenId = _config.itemTokenId;
         _statusUpdate();
@@ -195,7 +218,7 @@ contract Auction is IAuction, ERC721Holder {
     function getHighestBid() public view returns (uint256) {
         return fundsByBidder[highestBidder];
     }
-
+    
     function placeBid(
         address _bidder,
         uint256 _tokenAmount
@@ -205,8 +228,10 @@ contract Auction is IAuction, ERC721Holder {
         onlyAfterStart
         onlyBeforeEnd
         onlyNotCanceled
+        onlyNotEnded
         onlyNotOwner
         onlyValidBidder(_bidder)
+        onlyNotRescued
         returns (bool success)
     {
         // sanity checks
@@ -214,19 +239,20 @@ contract Auction is IAuction, ERC721Holder {
             _bidder != address(0),
             "[Auction] bidder cannot be zero address"
         );
-        require(_tokenAmount > 0, "[Auction] Cannot raise for 0 tokens");
-
-        // transfer first
-        _transfer(_bidder, _tokenAmount);
-        // operation in 18 decimals so adapt to token decimals
-        uint256 amount = _amount18Decimals(_tokenAmount);
+        require(_tokenAmount > 0, "[Auction] Cannot bid for 0 tokens");
+        require(
+            auctionItems.ownerOf(config.itemTokenId) == address(this),
+            "[Auction] Auction contract is not the owner of item cannot bid"
+        );
+        
+        _transferToContract(_bidder, _tokenAmount);
 
         uint256 bidIncrement = _computeBidIcrement(highestBindingBid);
-        require(amount >= bidIncrement, "[Auction] Bid increment to low");
-        uint256 newBid = fundsByBidder[_bidder] + amount;
+        require(_tokenAmount >= bidIncrement, "[Auction] Bid increment to low");
+        uint256 newBid = fundsByBidder[_bidder] + _tokenAmount;
         require(
             newBid >= config.startingPrice,
-            "[Auction] Cannot bid for less than strating price"
+            "[Auction] Cannot bid for less than starting price"
         );
         require(
             newBid > highestBindingBid,
@@ -235,16 +261,29 @@ contract Auction is IAuction, ERC721Holder {
 
         // get highest bid
         uint256 highestBid = fundsByBidder[highestBidder];
+        if (highestBid == 0) {
+            highestBid = config.startingPrice - 1;
+        }
+        // update user bid
+        fundsByBidder[_bidder] = newBid;
+        // add to array
+        _addToBidersArray(_bidder);
+
+        if (newBid >= config.buyItNowPrice) {
+            // cancel Auction on buyit now
+            ended = true;
+            highestBidder = _bidder;
+            highestBindingBid = newBid;
+            _statusUpdate();
+            emit BuytItNowEvent(_bidder);
+            return true;
+        }
 
         if (newBid <= highestBid) {
             // new bid overbid the highest binding bid but not highestBid
             // update highestBindingBid
             highestBindingBid = highestBid.min(newBid + bidIncrement);
         } else {
-            // if bidder is already the highest bidder:
-            // - raise highestBid, highestBindingBid remains unchanged .
-            highestBid = newBid;
-
             // if the user is NOT highestBidder:
             // - set highestBidder
             // - compute highestBindingBid.
@@ -252,8 +291,11 @@ contract Auction is IAuction, ERC721Holder {
                 highestBidder = _bidder;
                 highestBindingBid = newBid.min(highestBid + bidIncrement);
             }
-        }
 
+            // if bidder is already the highest bidder:
+            // - raise highestBid, highestBindingBid remains unchanged .
+            highestBid = newBid;
+        }
 
         // event
         emit BidEvent(
@@ -271,6 +313,7 @@ contract Auction is IAuction, ERC721Holder {
         onlyOwner
         onlyBeforeEnd
         onlyNotCanceled
+        onlyNotRescued
         returns (bool success)
     {
         canceled = true;
@@ -279,23 +322,78 @@ contract Auction is IAuction, ERC721Holder {
         return true;
     }
 
+    function rescue(
+        address payable receiver
+    ) public onlyEndedOrCanceled onlyAuctionFactory onlyNotRescued {
+        require(receiver != address(0));
+        require(
+            block.timestamp > (config.endTimestamp + 120 days),
+            "[Auction] Auction rescue can only be done  120 day after bid end"
+        );
+        // transfer tokens to address
+        uint256 bal = IERC20Metadata(bidToken).balanceOf(address(this));
+        if (bal > 0) {
+            IERC20Metadata(bidToken).transferFrom(address(this), receiver, bal);
+        }
+        if (auctionItems.ownerOf(config.itemTokenId) == address(this)) {
+            _transferItemTo(receiver);
+        }
+        bal = address(this).balance;
+        if (bal > 0) {
+            (bool sent, ) = receiver.call{value: bal}("");
+            require(sent, "[Auction] Rescue Failed to send Ether");
+        }
+    }
+
+    function withdrawAll() public onlyEndedOrCanceled returns (bool success) {
+        // withdraw all biders
+        for (uint i = 0; i < biders.length; i++) {
+            _withdraw(biders[i]);
+        }
+        // withdraw for owner
+        _withdraw(config.owner);
+        return true;
+    }
+
     function withdraw() public onlyEndedOrCanceled returns (bool success) {
+        return _withdraw(msg.sender);
+    }
+
+    function getMinimalIncrementTokens() public view returns (uint256) {
+        uint256 increment = _computeBidIcrement(highestBindingBid);
+
+        if (highestBindingBid < config.startingPrice) {
+            return config.startingPrice.max(increment);
+        }
+        return increment;
+    }
+
+
+    function _withdraw(
+        address to
+    ) internal onlyEndedOrCanceled returns (bool success) {
         address withdrawalAccount;
-        uint withdrawalAmount;
+        uint256 withdrawalAmount;
 
         if (canceled) {
             // if the auction was canceled, everyone should simply be allowed to withdraw their funds
-            withdrawalAccount = msg.sender;
+            withdrawalAccount = to;
             withdrawalAmount = fundsByBidder[withdrawalAccount];
+            if (!ownerHasWithdrawn) {
+                _transferItemTo(config.owner);
+            }
+            ownerHasWithdrawn = true;
         } else {
             // the auction finished without being canceled
-
-            if (msg.sender == config.owner) {
+            if (to == config.owner) {
                 // the auction's owner should be allowed to withdraw the highestBindingBid
                 withdrawalAccount = highestBidder;
                 withdrawalAmount = highestBindingBid;
+                if (!ownerHasWithdrawn) {
+                    _transferItemTo(highestBidder);
+                }
                 ownerHasWithdrawn = true;
-            } else if (msg.sender == highestBidder) {
+            } else if (to == highestBidder) {
                 // the highest bidder should only be allowed to withdraw the difference between their
                 // highest bid and the highestBindingBid
                 withdrawalAccount = highestBidder;
@@ -309,22 +407,12 @@ contract Auction is IAuction, ERC721Holder {
             } else {
                 // anyone who participated but did not win the auction should be allowed to withdraw
                 // the full amount of their funds
-                withdrawalAccount = msg.sender;
+                withdrawalAccount = to;
                 withdrawalAmount = fundsByBidder[withdrawalAccount];
             }
         }
 
-        require(withdrawalAmount > 0, "[Auction] withdraw amount is 0");
-
-        fundsByBidder[withdrawalAccount] -= withdrawalAmount;
-
-        // send the funds
-        (bool _success, ) = payable(msg.sender).call{value: withdrawalAmount}(
-            ""
-        );
-        require(_success, "[Auction] Failed to withdraw Auction funds.");
-        emit WithdrawalEvent(msg.sender, withdrawalAccount, withdrawalAmount);
-
+        _withdrawTokensToBider(withdrawalAccount, withdrawalAmount, to);
         return true;
     }
 
@@ -337,12 +425,6 @@ contract Auction is IAuction, ERC721Holder {
             return;
         }
 
-        if (ownerHasWithdrawn && (current != AuctionStatus.DELETABLE)) {
-            auctionStatus = AuctionStatus.DELETABLE;
-            emit StatusChanged(current, AuctionStatus.DELETABLE);
-            return;
-        }
-
         if (
             (block.timestamp > config.endTimestamp) &&
             (current != AuctionStatus.ENDED)
@@ -352,48 +434,44 @@ contract Auction is IAuction, ERC721Holder {
             return;
         }
 
-        if (current != AuctionStatus.ON_GOING) {
-            auctionStatus = AuctionStatus.ON_GOING;
-            emit StatusChanged(current, AuctionStatus.ON_GOING);
+        if (ended && (current != AuctionStatus.ENDED)) {
+            auctionStatus = AuctionStatus.ENDED;
+            emit StatusChanged(current, AuctionStatus.ENDED);
             return;
         }
 
         if (
-            (block.timestamp < config.startTimestamp) &&
-            (current != AuctionStatus.UNEXPECTED)
+            (current != AuctionStatus.ON_GOING) &&
+            !ended &&
+            !canceled &&
+            (block.timestamp <= config.endTimestamp)
         ) {
-            auctionStatus = AuctionStatus.UNEXPECTED;
-            emit StatusChanged(current, AuctionStatus.UNEXPECTED);
+            auctionStatus = AuctionStatus.ON_GOING;
+            emit StatusChanged(current, AuctionStatus.ON_GOING);
             return;
         }
     }
 
     function _computeBidIcrement(
-        uint256 tokenAmount
-    ) internal view returns (uint256) {
-        uint256 amount = _amount18Decimals(tokenAmount);
-        require(amount >= bidTiers[0], "Auction item value is invalid");
-        for (uint i = 1; i < bidTiers.length; i++) {
-            if (amount < bidTiers[i]) {
-                return bidIncrements[i - 1];
-            }
-        }
-        return bidIncrements[bidIncrements.length - 1];
-    }
-
-    function _amount18Decimals(
-        uint256 valueToken
-    ) internal view returns (uint256) {
-        return valueToken * 10 ** (18 - decimals);
-    }
-
-    function _amountTokenDecimals(
         uint256 value
     ) internal view returns (uint256) {
-        return value / 10 ** (18 - decimals);
+        require(
+            value >= _valueToTokens(bidTiers[0]),
+            "Auction item value is invalid"
+        );
+        for (uint i = 1; i < bidTiers.length; i++) {
+            if (value < _valueToTokens(bidTiers[i])) {
+                return _valueToTokens(bidIncrements[i - 1]);
+            }
+        }
+        return _valueToTokens(bidIncrements[bidIncrements.length - 1]);
     }
 
-    function _transfer(address from, uint256 tokenAmount) internal {
+    function _valueToTokens(uint256 value) internal view returns (uint256) {
+        return (value * 10 ** (decimals)) / 1 ether;
+    }
+
+    function _transferToContract(address from, uint256 tokenAmount) internal {
         // transfer tokens to contract
         bool success = IERC20Metadata(bidToken).transferFrom(
             from,
@@ -401,5 +479,70 @@ contract Auction is IAuction, ERC721Holder {
             tokenAmount
         );
         require(success, "[Auction] Transfer of Tokens from bidder failed.");
+    }
+
+    function _transferItemTo(address to) internal {
+        // transfer item to bidder or owner if address is 0
+        if (address(to) == address(0)) {
+            to = config.owner;
+        }
+        IERC721(auctionItems).safeTransferFrom(
+            address(this),
+            to,
+            config.itemTokenId
+        );
+    }
+
+    function _withdrawTokensToBider(
+        address _withdrawalAccount,
+        uint256 _withdrawalAmount,
+        address _to
+    ) internal {
+        fundsByBidder[_withdrawalAccount] -= _withdrawalAmount;
+        if (_to == config.owner) {
+            require(
+                _withdrawalAmount <= highestBindingBid,
+                "[AUction] owner cannot withdraw more than binding bid"
+            );
+            highestBindingBid = 0;
+        }
+        if (_withdrawalAmount != 0) {
+            bool _success = IERC20Metadata(bidToken).transfer(
+                _to,
+                _withdrawalAmount
+            );
+            require(_success, "[Auction] Failed to withdraw Auction funds.");
+        }
+        emit WithdrawalEvent(_to, _withdrawalAccount, _withdrawalAmount);
+    }
+
+    function _addToBidersArray(address addr) internal {
+        // checks if addr in array
+
+        for (uint i = 0; i < biders.length; i++) {
+            if (biders[i] == addr) {
+                return;
+            }
+        }
+        biders.push(addr);
+        emit NewBidder(addr);
+    }
+
+    function _IsDeletable() internal view returns (bool) {
+        if (auctionItems.ownerOf(config.itemTokenId) == address(this)) {
+            return false;
+        }
+
+        if (IERC20(bidToken).balanceOf(address(this)) > 0) {
+            return false;
+        }
+
+        for (uint i = 0; i < biders.length; i++) {
+            if (fundsByBidder[biders[i]] > 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
