@@ -147,7 +147,7 @@ describe("AuctionPaymaster", function () {
         try {
             await paymaster.connect(richTokenWallet).addToAllowedContracts(new_greeter.address);
         } catch (e) {
-            expect(e.message).to.include("Ownable: caller is not the owner");
+            expect(e.message).to.include("Only owner or allowed contracts can call this method");
         }
         
         // add to allowed now greeter should be set

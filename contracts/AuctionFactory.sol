@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Auction, IAuction} from "./Auction.sol";
 import {ZkSyncAuctionItems} from "./AuctionItems.sol";
+import {AuctionPaymaster} from "./AuctionPaymaster.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
@@ -17,6 +18,7 @@ contract AuctionFactory is IAuction, ERC721Holder {
     address public immutable USDC_ADDR;
     address public immutable DAI_ADDR;
     address public immutable AUCTION_ITEMS_ADDR;
+    address payable public immutable PAYMASTER;
     uint256 public constant FLAT_FEE = 0.5 ether;
 
     Auction[] public auctions;
@@ -27,10 +29,15 @@ contract AuctionFactory is IAuction, ERC721Holder {
         uint numAuctions
     );
 
-    constructor(address _usdToken, address _daiToken) {
+    constructor(
+        address _usdToken,
+        address _daiToken,
+        address payable paymaster
+    ) {
         USDC_ADDR = _usdToken;
         DAI_ADDR = _daiToken;
         AUCTION_ITEMS_ADDR = address(new ZkSyncAuctionItems());
+        PAYMASTER = paymaster;
     }
 
     function createAuction(
@@ -47,7 +54,11 @@ contract AuctionFactory is IAuction, ERC721Holder {
         );
 
         // tranfer flat fee
-        IERC20(_bidToken).transferFrom(msg.sender, address(this), _valueToTokens(_bidToken, FLAT_FEE));
+        IERC20(_bidToken).transferFrom(
+            msg.sender,
+            address(this),
+            _valueToTokens(_bidToken, FLAT_FEE)
+        );
 
         // mint a token
         uint256 _itemTokenId = ZkSyncAuctionItems(AUCTION_ITEMS_ADDR).safeMint(
@@ -78,6 +89,8 @@ contract AuctionFactory is IAuction, ERC721Holder {
             _config.itemTokenId
         );
 
+        AuctionPaymaster(PAYMASTER).addToAllowedContracts(address(newAuction));
+
         auctions.push(newAuction);
 
         emit AuctionCreated(newAuction, msg.sender, auctions.length);
@@ -91,6 +104,8 @@ contract AuctionFactory is IAuction, ERC721Holder {
         address bidToken,
         uint256 valueInEth
     ) internal view returns (uint256) {
-        return (valueInEth * 10 ** (IERC20Metadata(bidToken).decimals())) / 1 ether;
+        return
+            (valueInEth * 10 ** (IERC20Metadata(bidToken).decimals())) /
+            1 ether;
     }
 }

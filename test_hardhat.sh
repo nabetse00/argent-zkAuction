@@ -4,5 +4,10 @@
 # run ./start.sh
 clear
 echo "TEST WITH HARDHAT - LOCAL ZK SYNC NET"
+echo "remove cache data [to avoid wierd behaviour on gas estimation]"
+rm -rf ./artifacts-zk
+rm -rf ./cache-zk
 yarn test --grep "Auction" --bail
+# ALL tests
+# yarn test --bail
 echo "DONE"

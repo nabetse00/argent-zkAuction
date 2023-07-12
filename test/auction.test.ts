@@ -60,19 +60,25 @@ describe("Auction", function () {
         await dai.mint(richTokenWallet.address, ethers.utils.parseEther("100000"));
 
 
-        // Auction factory contract
-        auctionFactory = await deployContract(deployer, "AuctionFactory", [usdc.address, dai.address]);
 
+        
         // paymaster contract auction factory in allowed list
         paymaster = await deployContract(deployer, "AuctionPaymaster", [
-            ownerWallet.address, usdc.address, dai.address, auctionFactory.address
+            ownerWallet.address, usdc.address, dai.address, ownerWallet.address
         ]);
-        // add tokens to allowed list
+
+        // Auction factory contract
+        auctionFactory = await deployContract(deployer, "AuctionFactory", [usdc.address, dai.address, paymaster.address]);
+
+
+        // add tokens and auction Factory to allowed list
 
         const txUsdc = await paymaster.addToAllowedContracts(usdc.address);
         await txUsdc.wait();
         const txDai = await paymaster.addToAllowedContracts(dai.address);
         await txDai.wait();
+        const txAuctionFactory = await paymaster.addToAllowedContracts(auctionFactory.address);
+        await txAuctionFactory.wait();
 
 
         // mock proxis 
@@ -80,8 +86,8 @@ describe("Auction", function () {
         usdcUsd = await deployContract(deployer, "MyProxy", [ethers.utils.parseEther("1.0001"), ethers.constants.AddressZero]);
         daiUsd = await deployContract(deployer, "MyProxy", [ethers.utils.parseEther("0.9998"), ethers.constants.AddressZero]);
 
-        const setProxy = paymaster.setDapiProxy(usdcUsd.address, daiUsd.address, ethUsd.address)
-        await (await setProxy).wait()
+        const setProxy = await paymaster.setDapiProxy(usdcUsd.address, daiUsd.address, ethUsd.address)
+        await setProxy.wait()
         console.log("dAPI mock Proxies Set!")
         // fund paymaster
         await fundAccount(ownerWallet, paymaster.address, "5");
@@ -126,6 +132,7 @@ describe("Auction", function () {
                 });
 
         await approveTx.wait();
+        console.log("execute tx done approval");
 
     }
 
@@ -143,7 +150,7 @@ describe("Auction", function () {
             innerInput: new Uint8Array(),
         });
 
-        console.log("execute tx init");
+        console.log("execute tx create init");
         const createAuctionTx = await my_auction_factory
             .connect(user)
             .createAuction(
@@ -165,6 +172,7 @@ describe("Auction", function () {
                 });
 
         await createAuctionTx.wait();
+        console.log("execute tx create init");
 
     }
 

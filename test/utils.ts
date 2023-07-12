@@ -146,11 +146,13 @@ export async function estimateCreateAuctionGas(provider: Provider, richWallet: W
     } else {
         auction_fee = FLAT_FEE_DAI;
     }
-
+    console.log(`tx apporve auction fee ${auction_fee}`);
     const txApprove = await token.connect(richWallet).approve(
         auctionFactory.address,
         auction_fee);
     await txApprove.wait();
+    console.log("tx approve done auction fee");
+
     const gasLimit = await auctionFactory.connect(richWallet).estimateGas.createAuction(
         token.address,
         richWallet.address,

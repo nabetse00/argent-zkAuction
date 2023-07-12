@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "../contracts/AuctionFactory.sol";
 import "../contracts/Auction.sol";
 import "../contracts/AuctionItems.sol";
+import "../contracts/AuctionPaymaster.sol";
 import "../contracts/mocks/ERC20.sol";
 import "forge-std/console2.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
@@ -19,6 +20,8 @@ contract AuctionFactoryTest is Test, ERC721Holder {
     MyERC20 usdc;
     MyERC20 dai;
     ZkSyncAuctionItems auctionItems;
+    AuctionPaymaster paymaster;
+    address owner = address(98);
 
     uint256[] itemsIds;
 
@@ -44,7 +47,11 @@ contract AuctionFactoryTest is Test, ERC721Holder {
         itemsIds.push(itemId);
         itemId = auctionItems.safeMint(msg.sender, "item2.json");
         itemsIds.push(itemId);
-        auctionFactory = new AuctionFactory(address(usdc), address(dai));
+
+        paymaster = new AuctionPaymaster(address(this), address(usdc), address(dai), address(this));
+
+        auctionFactory = new AuctionFactory(address(usdc), address(dai), payable(address(paymaster)));
+        paymaster.addToAllowedContracts(address(auctionFactory));
         assertEq(auctionFactory.USDC_ADDR(), address(usdc));
         assertEq(auctionFactory.DAI_ADDR(), address(dai));
         assertNotEq(auctionFactory.AUCTION_ITEMS_ADDR(), address(0));

@@ -27,7 +27,6 @@ contract AuctionPaymaster is IPaymaster, Ownable {
     address public ETHdAPIProxy;
     uint256 public requiredETH;
 
-    mapping(address => uint256) private usersCoolDowns;
     mapping(address => bool) private allowedContracts;
 
     event UpdateAllowedContracts(address _target, bool _allowed);
@@ -40,11 +39,22 @@ contract AuctionPaymaster is IPaymaster, Ownable {
         // Continue execution if called from the bootloader.
         _;
     }
+    
+    modifier onlyOwnerOrAllowedContracts() {
+        require(
+            (msg.sender == owner()) || ( allowedContracts[msg.sender] ),
+            "Only owner or allowed contracts can call this method"
+        );
+        // Continue execution if called from the bootloader.
+        _;
+    }
 
     constructor(address _owner, address _usdc, address _dai, address _contract) {
         require(_owner != address(0), "Zero address cannot be the owner");
         require(_contract != address(0), "Zero address cannot be an allowed contract");
-        _addToAllowedContracts(_contract);
+        if( _contract != _owner){
+            _addToAllowedContracts(_contract);
+        }
         _transferOwnership(_owner);
         allowedTokens[0] = _usdc;
         allowedTokens[1] = _dai;
@@ -187,15 +197,15 @@ contract AuctionPaymaster is IPaymaster, Ownable {
         require(success, "Failed to withdraw token1 funds from paymaster.");
     }
 
-    function removeFromAllowedContracts(address _contract) public onlyOwner {
+    function removeFromAllowedContracts(address _contract) public onlyOwnerOrAllowedContracts {
         delete allowedContracts[_contract];
     }
 
-    function addToAllowedContracts(address _contract) public onlyOwner() {
+    function addToAllowedContracts(address _contract) public onlyOwnerOrAllowedContracts {
         _addToAllowedContracts(_contract);
     }
 
-    function _addToAllowedContracts(address _contract) private onlyOwner() {
+    function _addToAllowedContracts(address _contract) private {
         allowedContracts[_contract] = true;
         emit UpdateAllowedContracts(_contract, true);
     }
