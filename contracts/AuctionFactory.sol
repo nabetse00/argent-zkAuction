@@ -10,9 +10,10 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 /**
  * @title Auction Factory
  * @author Nabetse
- * @notice This is the first contract in paymaster allowed list.
- * @notice Adds new Auctions to paymaster allowed list.
+ * @notice This is contract must be in paymaster allowed list.
+ * @notice On createAuction Adds new Auctions to paymaster allowed list.
  * @notice A flat fee is applied when creating an Auction.
+ * @notice transfers items as ERC721 tokens to auction
  */
 contract AuctionFactory is IAuction, ERC721Holder {
     address public immutable USDC_ADDR;
@@ -29,6 +30,12 @@ contract AuctionFactory is IAuction, ERC721Holder {
         uint numAuctions
     );
 
+    /**
+     * Create Auction Factory
+     * @param _usdToken USD token address
+     * @param _daiToken DAI token adress
+     * @param paymaster paymaster address
+     */
     constructor(
         address _usdToken,
         address _daiToken,
@@ -89,6 +96,7 @@ contract AuctionFactory is IAuction, ERC721Holder {
             _config.itemTokenId
         );
 
+        // adds auction to paymaster
         AuctionPaymaster(PAYMASTER).addToAllowedContracts(address(newAuction));
 
         auctions.push(newAuction);
