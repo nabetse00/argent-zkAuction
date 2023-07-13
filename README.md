@@ -47,6 +47,21 @@ yarn deploy-zkauction-testnet
 
 ## Front end
 
+Install deps and run localy:
+```console
+  cd frontend/
+  yarn
+  yarn dev
+```
+A local server should at [http://localhost:5173/](http://localhost:5173/):
+```
+  VITE v4.4.3  ready in 652 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h to show help
+```
+
 Demo site [here](http://here.com)
 
 ## Run foundry tests
