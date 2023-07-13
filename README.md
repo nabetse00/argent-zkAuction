@@ -1,5 +1,6 @@
-# zkSync Hardhat project
+# Argent zkAuction
 
+![Argent zkAuction](./images/logo-color.png)
 This project was scaffolded with [zksync-cli](https://github.com/matter-labs/zksync-cli).
 
 ## Project structure
@@ -8,15 +9,7 @@ This project was scaffolded with [zksync-cli](https://github.com/matter-labs/zks
 - `/deploy`: deployment and contract interaction scripts.
 - `/test`: test files
 - `hardhat.config.ts`: configuration file.
-
-## Commands
-
-- `yarn hardhat compile` will compile the contracts.
-- `yarn run deploy` will execute the deployment script `/deploy/deploy-greeter.ts`. Requires [environment variable setup](#environment-variables).
-- `yarn run greet` will execute the script `/deploy/use-greeter.ts` which interacts with the Greeter contract deployed.
-- `yarn test`: run tests. **Check test requirements below.**
-
-Both `yarn run deploy` and `yarn run greet` are configured in the `package.json` file and run `yarn hardhat deploy-zksync`.
+- `/frontend`: demo site source code
 
 ### Environment variables
 
@@ -28,20 +21,31 @@ To use it, rename `.env.example` to `.env` and enter your private key.
 WALLET_PRIVATE_KEY=123cde574ccff....
 ```
 
-### Local testing
+## Contracts
 
-In order to run test, you need to start the zkSync local environment. Please check [this section of the docs](https://v2-docs.zksync.io/api/hardhat/testing.html#prerequisites) which contains all the details.
+- [AuctionPaymaster](./contracts/AuctionPaymaster.sol)
+A Paymaster contract that allow to pay fees of allowed contracts un DAI or USDC
+- [ZkSyncAuctionItems](./contracts/AuctionItems.sol) ERC721 Nft representing an item Auction.
+- [Auction](./contracts/Auction.sol) Auction contract with bid increments computed from item actual price and support for  **buy it now** price.
+- [AuctionFactory](./contracts/AuctionFactory.sol) Auctions creation contract. 
 
-If you do not start the zkSync local environment, the tests will fail with error `Error: could not detect network (event="noNetwork", code=NETWORK_ERROR, version=providers/5.7.2)`
+## Deployement
 
-## Official Links
+Use deployment command for local testing
 
-- [Website](https://zksync.io/)
-- [Documentation](https://v2-docs.zksync.io/dev/)
-- [GitHub](https://github.com/matter-labs)
-- [Twitter](https://twitter.com/zksync)
-- [Discord](https://discord.gg/nMaPGrDDwk)
+```console
+yarn deploy-zkauction-local
+```
 
+for ZkSyncEra testnet:
+
+```console
+yarn deploy-zkauction-testnet
+```
+
+## Front end
+
+Demo site [here](http://here.com)
 
 ## Run foundry tests
 
@@ -92,16 +96,25 @@ then:
 ```console
 forge test --via-ir
 ```
+you can also use `test_forge.sh` script:
+```console
+./test_forge.sh
+```
 
 See [forge docs](https://book.getfoundry.sh/reference/forge/forge-test)
 and [Hardhat Integrating with Foundry](https://hardhat.org/hardhat-runner/docs/advanced/hardhat-and-foundry)
 for more details.
 
-## Run local testnet tests
+## Run zkSync local environment tests
 
 Contracts are tested with a localnet
-(see [zkSync docs](https://era.zksync.io/docs/tools/hardhat/testing.html)
-for more details)
+
+
+In order to run test, you need to start the zkSync local environment. Please check [this section of the docs](https://v2-docs.zksync.io/api/hardhat/testing.html#prerequisites) which contains all the details.
+(see [zkSync docs local testing](https://era.zksync.io/docs/tools/hardhat/testing.html)
+for local network specific details)
+
+If you do not start the zkSync local environment, the tests will fail with error `Error: could not detect network (event="noNetwork", code=NETWORK_ERROR, version=providers/5.7.2)`
 
 Installing the testing environment (On windows os please use a ubuntu WSL2 install) 
 
@@ -121,10 +134,20 @@ Then in project root directory:
 
 Copy `env.example` to `.env`
 ```toml
-WALLET_PRIVATE_KEY="your private key here"
+WALLET_PRIVATE_KEY="your wallet private key here"
+
 # local testnet RICHWALLET
 RICH_WALLET_ADDRESS="0x36615Cf349d7F6344891B1e7CA7C72883F5dc049"
 RICH_WALLET_PRIVATE_KEY="0x7726827caac94a7f9e1b160f7ea819f172f7b6f9d2a97f992c38edeab82d4110"
+
+# TESNET USDC AND DAI ADDRESS
+USDC="0x0faF6df7054946141266420b43783387A78d82A9"
+DAI="0x3e7676937A7E96CFB7616f255b9AD9FF47363D4b"
+
+# Dapi proxies 
+ETHUSDdAPI="0x28ce555ee7a3daCdC305951974FcbA59F5BdF09b"
+USDCUSDdAPI="0x946E3232Cc18E812895A8e83CaE3d0caA241C2AB"
+DAIUSDdAPI="0xd038B4d9325aa2beB4E6f3E82B9165634Dc4C35E"
 
 # [OPTIONAL] COINMARKET
 COINMARKETCAP_API_KEY="your coinmarketcap api key here for fiat estimations"
@@ -151,3 +174,8 @@ MyProxy deployment is estimated to cost 0.00005049675 ETH [ ~ $0.0943 ]
 
 Done in 70.78s.
 ```
+
+
+
+
+## 
