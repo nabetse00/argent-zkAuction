@@ -6,7 +6,6 @@ import { BigNumber } from "ethers";
 
 // load env file
 import dotenv from "dotenv";
-import { Address } from "zksync-web3/build/src/types";
 dotenv.config();
 
 // load wallet private key from env file
@@ -85,7 +84,7 @@ export async function estimateGreeterGas(provider: Provider, richWallet: Wallet,
     return [tokenFee, gasLimit];
 }
 
-export async function estimateApprovalGas(provider: Provider, richWallet: Wallet, auctionFactory: Contract,
+export async function estimateFeeApprovalGas(provider: Provider, richWallet: Wallet, auctionFactory: Contract,
     paymaster: Contract, token: Contract, ethUsd: Contract, tokenUsd: Contract): Promise<ethers.ethers.BigNumber[]> {
     const gasPrice = await provider.getGasPrice();
     const symbol = await token.symbol();
@@ -98,7 +97,7 @@ export async function estimateApprovalGas(provider: Provider, richWallet: Wallet
         auction_fee = FLAT_FEE_DAI;
     }
     // Estimate gas fee for the transaction
-    // console.log("gaslimit")
+    const balance: BigNumber = await provider.getBalance(richWallet.address);
     const gasLimit = await token.connect(richWallet).estimateGas.approve(
         auctionFactory.address,
         auction_fee,
@@ -110,7 +109,7 @@ export async function estimateApprovalGas(provider: Provider, richWallet: Wallet
                     type: "ApprovalBased",
                     token: token.address,
                     // Set a large allowance just for estimation
-                    minimalAllowance: ethers.utils.parseEther("1000"),
+                    minimalAllowance: balance, //ethers.utils.parseEther("1000"),
                     innerInput: new Uint8Array(),
                 }),
             },
@@ -133,8 +132,10 @@ export async function estimateApprovalGas(provider: Provider, richWallet: Wallet
     return [tokenFee, gasLimit];
 }
 
-export async function estimateUserApprovalGas(provider: Provider, richWallet: Wallet, auction: Contract, amount: BigNumber,
+export async function estimateAuctionApprovalGas(provider: Provider, richWallet: Wallet, auction: Contract, amount: BigNumber,
     paymaster: Contract, token: Contract, ethUsd: Contract, tokenUsd: Contract): Promise<ethers.ethers.BigNumber[]> {
+
+    console.log(`[Estimate gas] Auction Approval function gas estimation`);
     const gasPrice = await provider.getGasPrice();
     const symbol = await token.symbol();
     const decimals = await token.decimals();
@@ -142,6 +143,8 @@ export async function estimateUserApprovalGas(provider: Provider, richWallet: Wa
 
     // Estimate gas fee for the transaction
     // console.log("gaslimit")
+    const balance: BigNumber = await provider.getBalance(richWallet.address);
+    console.log(`wallet balance is ${balance}`);
     const gasLimit = await token.connect(richWallet).estimateGas.approve(
         auction.address,
         amount,
@@ -153,7 +156,7 @@ export async function estimateUserApprovalGas(provider: Provider, richWallet: Wa
                     type: "ApprovalBased",
                     token: token.address,
                     // Set a large allowance just for estimation
-                    minimalAllowance: ethers.utils.parseEther("1000"),
+                    minimalAllowance: balance, //ethers.utils.parseUnits("1000", decimals),
                     innerInput: new Uint8Array(),
                 }),
             },
@@ -173,14 +176,14 @@ export async function estimateUserApprovalGas(provider: Provider, richWallet: Wa
     // Calculating the amount of token as fees:
     const tokenFee = fee.mul(ETHUSD).div(TOKENUSD).mul(decimalsBN).div(ethers.utils.parseUnits("1", 18));
     await logEstimation("user approval", tokenFee, ETHUSD, decimals, symbol, TOKENUSD, fee);
+    console.log(`[Estimate gas] Auction Approval function gas estimation DONE`);
     return [tokenFee, gasLimit];
 }
 
 export async function estimateCreateAuctionGas(provider: Provider, richWallet: Wallet, auctionFactory: Contract,
     paymaster: Contract, token: Contract, ethUsd: Contract, tokenUsd: Contract): Promise<ethers.ethers.BigNumber[]> {
+    console.log(`[Estimate gas] CreateAuction function gas estimation`);
     const gasPrice = await provider.getGasPrice();
-    // Estimate gas fee for the transaction
-    // console.log("gaslimit")
     const symbol = await token.symbol();
     const decimals = await token.decimals();
     const decimalsBN = ethers.utils.parseUnits("1", decimals.toString())
@@ -234,21 +237,22 @@ export async function estimateCreateAuctionGas(provider: Provider, richWallet: W
     // Calculating the amount of token as fees:
     const tokenFee = fee.mul(ETHUSD).div(TOKENUSD).mul(decimalsBN).div(ethers.utils.parseUnits("1", 18));
     await logEstimation("createAuction", tokenFee, ETHUSD, decimals, symbol, TOKENUSD, fee);
+    console.log(`[Estimate gas] CreateAuction function gas estimation DONE`);
     return [tokenFee, gasLimit];
 }
 
 export async function estimatePlaceBidGas(provider: Provider, richWallet: Wallet, auction: Contract, amount: BigNumber,
     paymaster: Contract, token: Contract, ethUsd: Contract, tokenUsd: Contract): Promise<ethers.ethers.BigNumber[]> {
+
+    console.log(`[Estimate gas] PlaceBid function gas estimation`);
     const gasPrice = await provider.getGasPrice();
-    // Estimate gas fee for the transaction
-    // console.log("gaslimit")
     const symbol = await token.symbol();
     const decimals = await token.decimals();
     const decimalsBN = ethers.utils.parseUnits("1", decimals.toString())
     const txApprove = await token.connect(richWallet).approve(
         auction.address,
         amount
-        );
+    );
     await txApprove.wait();
     console.log("tx approve done auction amount");
 
@@ -285,18 +289,31 @@ export async function estimatePlaceBidGas(provider: Provider, richWallet: Wallet
     // Calculating the amount of token as fees:
     const tokenFee = fee.mul(ETHUSD).div(TOKENUSD).mul(decimalsBN).div(ethers.utils.parseUnits("1", 18));
     await logEstimation("placeBid", tokenFee, ETHUSD, decimals, symbol, TOKENUSD, fee);
+    console.log(`[Estimate gas] PlaceBid function gas estimation DONE`);
     return [tokenFee, gasLimit];
 }
 
 export async function logEstimation(tittle: string, tokenFee: BigNumber,
     ETHUSD: BigNumber, decimals: number, symbol: string, TOKENUSD: BigNumber, fee: BigNumber) {
     const parsedFeeUSD = await etherToUSD(fee);
-    console.log(`Done estimation for ${tittle} ${ethers.utils.formatUnits(tokenFee, decimals)} ${symbol}@${ethers.utils.formatUnits(TOKENUSD, 18)} ${parsedFeeUSD}@${ethers.utils.formatUnits(ETHUSD, 18)}`);
-
+    console.log(`Done estimation for ${tittle} ${ethers.utils.formatUnits(tokenFee, decimals)} ${symbol}@${ethers.utils.formatUnits(TOKENUSD, 18)} eth fee was ${parsedFeeUSD}`);
 }
 
 export async function etherToUSD(amount: BigNumber): Promise<string> {
-    const getQuote = await coinMarketCapclient.getQuotes({ symbol: 'ETH' });
-    const quote = getQuote.data["ETH"].quote['USD'].price;
-    return (parseFloat(ethers.utils.formatEther(amount)) * parseFloat(quote)).toFixed(4);
+    if (COINMARKETCAP_API_KEY) {
+        let val = ""
+        try {
+            const getQuote = await coinMarketCapclient.getQuotes({ symbol: 'ETH' });
+            const quote = getQuote.data["ETH"].quote['USD'].price;
+            val = (parseFloat(ethers.utils.formatEther(amount)) * parseFloat(quote)).toFixed(4);
+        } catch (e) {
+            console.log("CoinMarcket cap get Quotee failed using 1 eth = 2000 $")
+            val = (parseFloat(ethers.utils.formatEther(amount)) * parseFloat("2000")).toFixed(4);
+        }
+        return val
+    }
+    else {
+        const quote = "2000"
+        return (parseFloat(ethers.utils.formatEther(amount)) * parseFloat(quote)).toFixed(4);
+    }
 }

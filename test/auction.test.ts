@@ -3,7 +3,7 @@ import { Wallet, Provider, Contract, utils } from "zksync-web3";
 import * as hre from "hardhat";
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import * as ethers from "ethers";
-import { FLAT_FEE_DAI, FLAT_FEE_USDC, PRIVATE_KEY, deployContract, estimateApprovalGas, estimateCreateAuctionGas, estimatePlaceBidGas, estimateUserApprovalGas, fundAccount, } from "./utils";
+import { FLAT_FEE_DAI, FLAT_FEE_USDC, PRIVATE_KEY, deployContract, estimateFeeApprovalGas, estimateCreateAuctionGas, estimatePlaceBidGas, estimateAuctionApprovalGas, fundAccount, } from "./utils";
 import { Address } from "zksync-web3/build/src/types";
 import { BigNumber } from "ethers";
 
@@ -109,7 +109,7 @@ describe("Auction", function () {
         const token_address = token.address.toString();
         const decimals = await token.decimals();
         const symbol = await token.symbol();
-        const [fee, gasLimit] = await estimateUserApprovalGas(provider, rich, auction, amount, paymaster, token, ethUsd, tokenUsd);
+        const [fee, gasLimit] = await estimateAuctionApprovalGas(provider, rich, auction, amount, paymaster, token, ethUsd, tokenUsd);
         console.log(`fee ${ethers.utils.formatUnits(fee, decimals)} gasLimit ${gasLimit}`)
         const paymasterParams = utils.getPaymasterParams(paymaster.address, {
             type: "ApprovalBased",
@@ -118,7 +118,7 @@ describe("Auction", function () {
             innerInput: new Uint8Array(),
         });
 
-        console.log(`execute tx approval estimation init for ${amount} token`);
+        console.log(`execute tx approval init for ${amount} token`);
         const approveTx = await token
             .connect(user)
             .approve(
@@ -136,10 +136,9 @@ describe("Auction", function () {
                 });
 
         await approveTx.wait();
-        console.log("execute tx estimation approval token done");
+        console.log("execute tx approval token done");
         const approval = await token.allowance(user.address, auction.address)
         expect(approval).to.eql(amount);
-
     }
 
     async function executeApprovalTransaction(my_auction_factory: Contract, user: Wallet, rich: Wallet, token: Contract, tokenUsd: Contract) {
@@ -153,7 +152,7 @@ describe("Auction", function () {
         } else {
             auction_fee = FLAT_FEE_DAI;
         }
-        const [fee, gasLimit] = await estimateApprovalGas(provider, rich, my_auction_factory, paymaster, token, ethUsd, tokenUsd);
+        const [fee, gasLimit] = await estimateFeeApprovalGas(provider, rich, my_auction_factory, paymaster, token, ethUsd, tokenUsd);
         console.log(`fee ${ethers.utils.formatUnits(fee, decimals)} gasLimit ${gasLimit}`)
         const paymasterParams = utils.getPaymasterParams(paymaster.address, {
             type: "ApprovalBased",
