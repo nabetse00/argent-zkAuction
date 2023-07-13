@@ -30,6 +30,7 @@
     "test": "NODE_ENV=test hardhat test --network zkSyncTestnet",
     "deploy": "yarn hardhat deploy-zksync --script deploy-greeter.ts",
     "deploy-paymaster-local": "NODE_ENV=test hardhat deploy-zksync --script deploy-paymaster.ts --network zkSyncTestnet",
+    "deploy-zkauction-local": "NODE_ENV=test hardhat deploy-zksync --script deploy-zkAuction.ts --network zkSyncTestnet",
     "greet": "yarn hardhat deploy-zksync --script use-greeter.ts"
   },
   "dependencies": {

@@ -3,53 +3,70 @@ import * as ethers from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 
-require('dotenv').config();
+// load env file
+import dotenv from "dotenv";
+import deployMocks from "./deploy-mocks";
+import { Address } from "zksync-web3/build/src/types";
+dotenv.config();
+
 // load wallet private key from env file
 const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || "";
 const RICH_WALLET_PRIVATE_KEY = process.env.RICH_WALLET_PRIVATE_KEY || "";
-const AUCTION_CONTRACT_ADDR = process.env.AUCTION_CONTRACT_ADDR || "";
-const COOL_DOWN_DURATION = 100;
 
-export default async function deployAuctionPaymaster(hre: HardhatRuntimeEnvironment) {
-
-  if(AUCTION_CONTRACT_ADDR == "" ){
-    throw "AUCTION contract address should be set check .env file before deploying paymaster"
-  }
-  
+export default async function deployAuctionPaymaster(hre: HardhatRuntimeEnvironment): Promise<{ paymaster: string; usdc: string; dai: string; }>{
+  const nodeEnv = process.env.NODE_ENV || "NONE"
+  logDeploy(`NODE_ENV: ${nodeEnv}`)
   let wallet: Wallet;
+  let usdcAddr = ""
+  let daiAddr = ""
+  let ETHUSDdAPI = ""
+  let USDCUSDdAPI = ""
+  let DAIUSDdAPI = ""
   if (process.env.NODE_ENV != "test") {
-  wallet = new Wallet(WALLET_PRIVATE_KEY);
-  console.log(`On era testnet we a founded wallet to delpoy: ${wallet.address}`);
-  }else{
+    wallet = new Wallet(WALLET_PRIVATE_KEY);
+    logDeploy(`On era testnet we a founded wallet to delpoy: ${wallet.address}`);
+    usdcAddr = process.env.USDC || ""
+    daiAddr = process.env.DAI || ""
+    logDeploy(`Stable coins zkSync era Tesnet addresses: \n USDC: ${usdcAddr} \n DAI ${daiAddr}`)
+    // Setting the dAPIs in Paymaster. Head over to the API3 Market (https://market.api3.org) to verify dAPI 
+    // proxy contract addresses and whether they're funded or not.
+    ETHUSDdAPI = process.env.ETHUSDdAPI || "";
+    USDCUSDdAPI = process.env.USDCUSDdAPI || "";
+    DAIUSDdAPI = process.env.DAIUSDdAPI || "";
+    logDeploy(`zkSync era Tesnet poxies: \n [ ${ETHUSDdAPI}, ${USDCUSDdAPI}, ${DAIUSDdAPI} ]`)
+  } else {
     wallet = new Wallet(RICH_WALLET_PRIVATE_KEY);
-    console.log(`On local testnet we use a rich wallet to delpoy: ${wallet.address}`);
+    logDeploy(`On local testnet we use a rich wallet to delpoy: ${wallet.address}`);
+    const  mocks = await deployMocks(hre);
+    usdcAddr = mocks.usdcAddr;
+    daiAddr = mocks.daiAddr;
+    ETHUSDdAPI = mocks.ethUsdAddr;
+    USDCUSDdAPI = mocks.usdcUsdAddr;
+    DAIUSDdAPI = mocks.daiUsdAddr;
+
   }
   const deployer = new Deployer(hre, wallet);
-
-  const usdcAddr = "0x0faF6df7054946141266420b43783387A78d82A9"
-  const daiAddr = "0x3e7676937A7E96CFB7616f255b9AD9FF47363D4b"
+  logDeploy(`Deployer zkWallet: ${deployer.zkWallet.address}`)
+  logDeploy(`Deployer ethWallet: ${deployer.ethWallet.address}`)
 
   // Deploying the paymaster
   const paymasterArtifact = await deployer.loadArtifact("AuctionPaymaster");
-  const paymaster = await deployer.deploy(paymasterArtifact, [wallet.address, usdcAddr, daiAddr, AUCTION_CONTRACT_ADDR, COOL_DOWN_DURATION]);
-  console.log(`Paymaster address: ${paymaster.address}`);
+  const paymaster = await deployer.deploy(paymasterArtifact, [wallet.address, usdcAddr, daiAddr, wallet.address]);
+  logDeploy(`paymaster contract address: ${paymaster.address}`);
+  logDeploy(`owner is: ${wallet.address}`);
 
   // Supplying paymaster with ETH.
-  await (
-    await deployer.zkWallet.sendTransaction({
-      to: paymaster.address,
-      value: ethers.utils.parseEther("0.05"),
-    })
-  ).wait();
+  const fundTx = await deployer.zkWallet.sendTransaction({
+    to: paymaster.address,
+    value: ethers.utils.parseEther("0.05"),
+  })
 
-  // Setting the dAPIs in Paymaster. Head over to the API3 Market (https://market.api3.org) to verify dAPI 
-  // proxy contract addresses and whether they're funded or not.
-  const ETHUSDdAPI = "0x28ce555ee7a3daCdC305951974FcbA59F5BdF09b";
-  const USDCUSDdAPI = "0x946E3232Cc18E812895A8e83CaE3d0caA241C2AB";
-  const DAIUSDdAPI = "0xd038B4d9325aa2beB4E6f3E82B9165634Dc4C35E"
-  const setProxy = paymaster.setDapiProxy(USDCUSDdAPI, DAIUSDdAPI, ETHUSDdAPI)
-  await (await setProxy).wait()
-  console.log("dAPI Proxies Set!")
+  await fundTx.wait();
+
+
+  const setProxytx = await paymaster.setDapiProxy(USDCUSDdAPI, DAIUSDdAPI, ETHUSDdAPI)
+  await setProxytx.wait();
+  logDeploy("dAPI Proxies set")
 
   // verify contract for tesnet & mainnet
   if (process.env.NODE_ENV != "test") {
@@ -59,15 +76,20 @@ export default async function deployAuctionPaymaster(hre: HardhatRuntimeEnvironm
     const verificationId = await hre.run("verify:verify", {
       address: paymaster.address,
       contract: contractFullyQualifedName,
-      constructorArguments: [],
+      constructorArguments: [wallet.address, usdcAddr, daiAddr, wallet.address],
       bytecode: paymasterArtifact.bytecode,
     });
-    console.log(
+    logDeploy(
       `${contractFullyQualifedName} verified! VerificationId: ${verificationId}`,
     );
   } else {
-    console.log(`Contract not verified, deployed locally.`);
+    logDeploy(`Contract not verified, deployed locally.`);
   }
+  logDeploy(`Done!`);
+  return { paymaster: paymaster.address, usdc: usdcAddr, dai: daiAddr}
+}
 
-  console.log(`Done!`);
+// helpers
+function logDeploy(log: string) {
+  console.log(`[DEPLOY Paymaster] ${log}`)
 }
