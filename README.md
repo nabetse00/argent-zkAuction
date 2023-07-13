@@ -27,7 +27,9 @@ WALLET_PRIVATE_KEY=123cde574ccff....
 A Paymaster contract that allow to pay fees of allowed contracts un DAI or USDC
 - [ZkSyncAuctionItems](./contracts/AuctionItems.sol) ERC721 Nft representing an item Auction.
 - [Auction](./contracts/Auction.sol) Auction contract with bid increments computed from item actual price and support for  **buy it now** price.
-- [AuctionFactory](./contracts/AuctionFactory.sol) Auctions creation contract. 
+- [AuctionFactory](./contracts/AuctionFactory.sol) Auctions creation contract.
+- [mocks](./contracts/mocks/) folder for mock contracts, only used when testing.
+- [Greeter](./contracts/Greeter.sol) simple greeter test contract, not used in tesnet.
 
 ## Deployement
 
