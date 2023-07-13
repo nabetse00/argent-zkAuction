@@ -6,6 +6,7 @@ import { BigNumber } from "ethers";
 
 // load env file
 import dotenv from "dotenv";
+import { Address } from "zksync-web3/build/src/types";
 dotenv.config();
 
 // load wallet private key from env file
@@ -132,6 +133,49 @@ export async function estimateApprovalGas(provider: Provider, richWallet: Wallet
     return [tokenFee, gasLimit];
 }
 
+export async function estimateUserApprovalGas(provider: Provider, richWallet: Wallet, auction: Contract, amount: BigNumber,
+    paymaster: Contract, token: Contract, ethUsd: Contract, tokenUsd: Contract): Promise<ethers.ethers.BigNumber[]> {
+    const gasPrice = await provider.getGasPrice();
+    const symbol = await token.symbol();
+    const decimals = await token.decimals();
+    const decimalsBN = ethers.utils.parseUnits("1", decimals.toString())
+
+    // Estimate gas fee for the transaction
+    // console.log("gaslimit")
+    const gasLimit = await token.connect(richWallet).estimateGas.approve(
+        auction.address,
+        amount,
+        {
+            customData: {
+                // TODO make an estimation of gasPerPubData
+                gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
+                paymasterParams: utils.getPaymasterParams(paymaster.address, {
+                    type: "ApprovalBased",
+                    token: token.address,
+                    // Set a large allowance just for estimation
+                    minimalAllowance: ethers.utils.parseEther("1000"),
+                    innerInput: new Uint8Array(),
+                }),
+            },
+        }
+    );
+    // console.log("gaslimit done")
+    // Gas estimation:
+    const fee = gasPrice.mul(gasLimit.toString());
+    // Calling the dAPI to get the ETH price:
+    const ETHUSD = await paymaster.readDapi(
+        ethUsd.address
+    );
+    const TOKENUSD = await paymaster.readDapi(
+        tokenUsd.address
+    );
+
+    // Calculating the amount of token as fees:
+    const tokenFee = fee.mul(ETHUSD).div(TOKENUSD).mul(decimalsBN).div(ethers.utils.parseUnits("1", 18));
+    await logEstimation("user approval", tokenFee, ETHUSD, decimals, symbol, TOKENUSD, fee);
+    return [tokenFee, gasLimit];
+}
+
 export async function estimateCreateAuctionGas(provider: Provider, richWallet: Wallet, auctionFactory: Contract,
     paymaster: Contract, token: Contract, ethUsd: Contract, tokenUsd: Contract): Promise<ethers.ethers.BigNumber[]> {
     const gasPrice = await provider.getGasPrice();
@@ -190,6 +234,57 @@ export async function estimateCreateAuctionGas(provider: Provider, richWallet: W
     // Calculating the amount of token as fees:
     const tokenFee = fee.mul(ETHUSD).div(TOKENUSD).mul(decimalsBN).div(ethers.utils.parseUnits("1", 18));
     await logEstimation("createAuction", tokenFee, ETHUSD, decimals, symbol, TOKENUSD, fee);
+    return [tokenFee, gasLimit];
+}
+
+export async function estimatePlaceBidGas(provider: Provider, richWallet: Wallet, auction: Contract, amount: BigNumber,
+    paymaster: Contract, token: Contract, ethUsd: Contract, tokenUsd: Contract): Promise<ethers.ethers.BigNumber[]> {
+    const gasPrice = await provider.getGasPrice();
+    // Estimate gas fee for the transaction
+    // console.log("gaslimit")
+    const symbol = await token.symbol();
+    const decimals = await token.decimals();
+    const decimalsBN = ethers.utils.parseUnits("1", decimals.toString())
+    const txApprove = await token.connect(richWallet).approve(
+        auction.address,
+        amount
+        );
+    await txApprove.wait();
+    console.log("tx approve done auction amount");
+
+    const gasLimit = await auction.connect(richWallet).estimateGas.placeBid(
+        richWallet.address,
+        amount,
+        {
+            customData: {
+                // TODO make an estimation of gasPerPubData
+                gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
+                paymasterParams: utils.getPaymasterParams(paymaster.address, {
+                    type: "ApprovalBased",
+                    token: token.address,
+                    // Set a large allowance just for estimation
+                    minimalAllowance: ethers.utils.parseEther("1000"),
+                    innerInput: new Uint8Array(),
+                }),
+            },
+        }
+    );
+    // console.log("gaslimit done")
+    // Gas estimation:
+    const fee = gasPrice.mul(gasLimit.toString());
+
+
+    // Calling the dAPI to get the ETH price:
+    const ETHUSD = await paymaster.readDapi(
+        ethUsd.address
+    );
+    const TOKENUSD = await paymaster.readDapi(
+        tokenUsd.address
+    );
+
+    // Calculating the amount of token as fees:
+    const tokenFee = fee.mul(ETHUSD).div(TOKENUSD).mul(decimalsBN).div(ethers.utils.parseUnits("1", 18));
+    await logEstimation("placeBid", tokenFee, ETHUSD, decimals, symbol, TOKENUSD, fee);
     return [tokenFee, gasLimit];
 }
 

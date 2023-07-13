@@ -3,9 +3,18 @@ import { Wallet, Provider, Contract, utils } from "zksync-web3";
 import * as hre from "hardhat";
 import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
 import * as ethers from "ethers";
-import { FLAT_FEE_DAI, FLAT_FEE_USDC, PRIVATE_KEY, deployContract, estimateApprovalGas, estimateCreateAuctionGas, fundAccount, } from "./utils";
+import { FLAT_FEE_DAI, FLAT_FEE_USDC, PRIVATE_KEY, deployContract, estimateApprovalGas, estimateCreateAuctionGas, estimatePlaceBidGas, estimateUserApprovalGas, fundAccount, } from "./utils";
+import { Address } from "zksync-web3/build/src/types";
+import { BigNumber } from "ethers";
 
-
+enum AuctionStatus {
+    INIT,
+    ON_GOING,
+    ENDED,
+    CANCELED,
+    DELETABLE,
+    UNEXPECTED
+}
 
 describe("Auction", function () {
     let provider: Provider;
@@ -17,6 +26,7 @@ describe("Auction", function () {
     let paymaster: Contract;
     let auctionFactory: Contract;
     let numberOfAuctions: number = 1;
+    let my_auctions: Address[] = [];
     let usdc: Contract;
     let dai: Contract;
     let usdcUsd: Contract;
@@ -93,6 +103,44 @@ describe("Auction", function () {
         await fundAccount(ownerWallet, paymaster.address, "5");
     });
 
+
+    async function executeUserApprovalTransaction(auction: Contract, amount: BigNumber, user: Wallet, rich: Wallet, token: Contract, tokenUsd: Contract) {
+        const gasPrice = await provider.getGasPrice();
+        const token_address = token.address.toString();
+        const decimals = await token.decimals();
+        const symbol = await token.symbol();
+        const [fee, gasLimit] = await estimateUserApprovalGas(provider, rich, auction, amount, paymaster, token, ethUsd, tokenUsd);
+        console.log(`fee ${ethers.utils.formatUnits(fee, decimals)} gasLimit ${gasLimit}`)
+        const paymasterParams = utils.getPaymasterParams(paymaster.address, {
+            type: "ApprovalBased",
+            token: token_address,
+            minimalAllowance: fee,
+            innerInput: new Uint8Array(),
+        });
+
+        console.log(`execute tx approval estimation init for ${amount} token`);
+        const approveTx = await token
+            .connect(user)
+            .approve(
+                auction.address,
+                amount,
+                {
+                    maxPriorityFeePerGas: ethers.BigNumber.from(0),
+                    maxFeePerGas: gasPrice,
+                    // from estimation
+                    gasLimit: gasLimit,
+                    customData: {
+                        gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
+                        paymasterParams,
+                    },
+                });
+
+        await approveTx.wait();
+        console.log("execute tx estimation approval token done");
+        const approval = await token.allowance(user.address, auction.address)
+        expect(approval).to.eql(amount);
+
+    }
 
     async function executeApprovalTransaction(my_auction_factory: Contract, user: Wallet, rich: Wallet, token: Contract, tokenUsd: Contract) {
         const gasPrice = await provider.getGasPrice();
@@ -176,6 +224,59 @@ describe("Auction", function () {
 
     }
 
+    async function executePlaceBidTransaction(auctionAddr: string, user: Wallet, rich: Wallet, token: Contract, tokenUsd: Contract) {
+        const gasPrice = await provider.getGasPrice();
+        const token_address = token.address.toString();
+        const decimals = await token.decimals();
+        const artifact = await deployer.loadArtifact("Auction");
+        const auction =  new Contract(auctionAddr, artifact.abi, provider);
+        const status:boolean = await paymaster.getAllowedContracts(auction.address);
+        console.log(`approval to ${auction.address} status is ${status}`)
+        const increment: BigNumber = await auction.getMinimalIncrementTokens();
+        // give user tokens
+        const mintTx = await token.mint(user.address, increment.mul(10));
+        await mintTx.wait()
+        console.log(`for ${increment} tokens`)
+        await executeUserApprovalTransaction(auction, increment, user, rich, token, tokenUsd);
+        console.log("Done Approve")
+        const [fee, gasLimit] = await estimatePlaceBidGas(provider, rich, auction, increment, paymaster, token, ethUsd, tokenUsd);
+        console.log(`fee ${ethers.utils.formatUnits(fee, decimals)} gasLimit ${gasLimit}`)
+        const paymasterParams = utils.getPaymasterParams(paymaster.address, {
+            type: "ApprovalBased",
+            token: token_address,
+            minimalAllowance: fee,
+            innerInput: new Uint8Array(),
+        });
+
+        const bal = await token.balanceOf(user.address);
+
+        console.log(`execute tx placeBid inituser: ${bal}`);
+        const createAuctionTx = await auction
+            .connect(user)
+            .placeBid(
+                user.address,
+                increment,
+                {
+                    maxPriorityFeePerGas: ethers.BigNumber.from(0),
+                    maxFeePerGas: gasPrice,
+                    // from estimation
+                    gasLimit: gasLimit,
+                    customData: {
+                        gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
+                        paymasterParams,
+                    },
+                });
+
+        await createAuctionTx.wait();
+        console.log("execute tx Placebid done");
+        // check bid
+        const hb = await auction.getHighestBid();
+        expect(hb).to.eql(increment);
+        const st = await auction.auctionStatus();
+        expect(st).to.eql(AuctionStatus.ON_GOING)
+
+    }
+
     async function testAuctionCreationWithPaymaster(_token: Contract, tokenUsd: Contract) {
         const decimals = await _token.decimals()
         const symbol = await _token.symbol();
@@ -205,9 +306,10 @@ describe("Auction", function () {
         const finalUserTokenBalance = await _token.balanceOf(userWallet.address);
         const finalPaymasterBalance = await provider.getBalance(paymaster.address);
         const finalPaymasterTokenBalance = await _token.balanceOf(paymaster.address);
-        const auctions = await auctionFactory.getAuctions();
-        // console.log(auctions)
+        const auctions:string[] = await auctionFactory.getAuctions();
+        console.log(auctions)
         expect(auctions.length).to.equal(numberOfAuctions);
+        my_auctions.push(auctions[numberOfAuctions-1]);
         expect(initialPaymasterBalance.gt(finalPaymasterBalance)).to.be.true;
         expect(userInitialETHBalance).to.eql(finalETHBalance);
         expect(userInitialTokenBalance.gt(finalUserTokenBalance)).to.be.true;
@@ -224,8 +326,14 @@ describe("Auction", function () {
         numberOfAuctions++;
     });
 
-    it("user with Dai token can crate auction, fee payed in dai", async function () {
+    it("user with Dai token can create auction, fee payed in dai", async function () {
         await testAuctionCreationWithPaymaster(dai, daiUsd);
         numberOfAuctions++;
     });
+
+    it("place a bid for auction in usdc via paymaster", async function () {
+        await executePlaceBidTransaction(my_auctions[0], otherUserWallet, richTokenWallet, usdc, usdcUsd);
+    });
+
+
 });
