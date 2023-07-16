@@ -32,6 +32,8 @@
     "deploy-paymaster-local": "NODE_ENV=test hardhat deploy-zksync --script deploy-paymaster.ts --network zkSyncTestnet",
     "deploy-zkauction-local": "NODE_ENV=test hardhat deploy-zksync --script deploy-zkAuction.ts --network zkSyncTestnet",
     "deploy-zkauction-testnet": "hardhat deploy-zksync --script deploy-zkAuction.ts --network zkSyncTestnet",
+    "deploy-post-testnet": "hardhat deploy-zksync --script deploy-post-approval.ts --network zkSyncTestnet",
+    "add-funds": "NODE_ENV=test hardhat deploy-zksync --script add-funds-localnet.ts --network zkSyncTestnet",
     "greet": "yarn hardhat deploy-zksync --script use-greeter.ts"
   },
   "dependencies": {

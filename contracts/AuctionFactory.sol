@@ -6,6 +6,7 @@ import {ZkSyncAuctionItems} from "./AuctionItems.sol";
 import {AuctionPaymaster} from "./AuctionPaymaster.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Auction Factory
@@ -15,7 +16,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
  * @notice A flat fee is applied when creating an Auction.
  * @notice transfers items as ERC721 tokens to auction
  */
-contract AuctionFactory is IAuction, ERC721Holder {
+contract AuctionFactory is IAuction, ERC721Holder, Ownable {
     address public immutable USDC_ADDR;
     address public immutable DAI_ADDR;
     address public immutable AUCTION_ITEMS_ADDR;
@@ -35,16 +36,19 @@ contract AuctionFactory is IAuction, ERC721Holder {
      * @param _usdToken USD token address
      * @param _daiToken DAI token adress
      * @param paymaster paymaster address
+     * @param factoryOwner factory owner
      */
     constructor(
         address _usdToken,
         address _daiToken,
-        address payable paymaster
+        address payable paymaster,
+        address factoryOwner
     ) {
         USDC_ADDR = _usdToken;
         DAI_ADDR = _daiToken;
         AUCTION_ITEMS_ADDR = address(new ZkSyncAuctionItems());
         PAYMASTER = paymaster;
+        _transferOwnership(factoryOwner);
     }
 
     function createAuction(
@@ -106,6 +110,27 @@ contract AuctionFactory is IAuction, ERC721Holder {
 
     function getAuctions() public view returns (Auction[] memory) {
         return auctions;
+    }
+
+    function withdrawFees(
+        address payable receiver
+    ) public onlyOwner {
+        require(receiver != address(0));
+        uint256 bal = IERC20Metadata(USDC_ADDR).balanceOf(address(this));
+        if (bal > 0) {
+            bool success = IERC20Metadata(USDC_ADDR).transfer(receiver, bal);
+            require(success, "[Auction Factory] Withdraw Fees Failed to send DAI");
+        }
+        bal = IERC20Metadata(DAI_ADDR).balanceOf(address(this));
+        if (bal > 0) {
+            bool success = IERC20Metadata(DAI_ADDR).transfer( receiver, bal);
+            require(success, "[Auction Factory] Withdraw Fees Failed to send DAI");
+        }
+        bal = address(this).balance;
+        if (bal > 0) {
+            (bool sent, ) = receiver.call{value: bal}("");
+            require(sent, "[Auction] Rescue Failed to send Ether");
+        }
     }
 
     function _valueToTokens(

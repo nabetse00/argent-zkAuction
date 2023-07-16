@@ -1,6 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import deployAuctionPaymaster from "./deploy-paymaster";
 import deployAuctionFactory from "./deploy-auctionfactory";
+import { addFunds } from "./add-funds-localnet";
 
 export default async function deployskAuctionContracts(hre: HardhatRuntimeEnvironment) {
   const nodeEnv = process.env.NODE_ENV || "NONE"
@@ -11,6 +12,8 @@ export default async function deployskAuctionContracts(hre: HardhatRuntimeEnviro
 
   logDeploy("deploy auction factory")
   await deployAuctionFactory(hre, paymaster, usdc, dai)
+
+  await addFunds(hre, paymaster, usdc, dai);
 
 
   logDeploy(`Done!`);

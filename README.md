@@ -45,6 +45,56 @@ for ZkSyncEra testnet:
 yarn deploy-zkauction-testnet
 ```
 
+Output:
+
+```console
+yarn run v1.22.19
+$ NODE_ENV=test hardhat deploy-zksync --script deploy-zkAuction.ts --network zkSyncTestnet
+[DEPLOY zkAuction contracts] NODE_ENV: test
+[DEPLOY zkAuction contracts] deploy paymaster
+[DEPLOY Paymaster] NODE_ENV: test
+[DEPLOY Paymaster] On local testnet we use a rich wallet to delpoy: 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049
+[DEPLOY Mock contracts] NODE_ENV: test
+[DEPLOY Mock contracts] On local testnet we use a rich wallet to delpoy: 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049
+[DEPLOY Mock contracts] Deployer zkWallet: 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049
+[DEPLOY Mock contracts] Deployer ethWallet: 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049
+[DEPLOY Mock contracts] Stable coins mocks addresses: 
+ USDC: 0x111C3E89Ce80e62EE88318C2804920D4c96f92bb 
+ DAI 0x4B5DF730c2e6b28E17013A1485E5d9BC41Efe021
+[DEPLOY Mock contracts] Proxys: [0x26b368C3Ed16313eBd6660b72d8e4439a697Cb0B, 0x094499Df5ee555fFc33aF07862e43c90E6FEe501, 0xb76eD02Dea1ba444609602BE5D587c4bFfd67153 ]
+[DEPLOY Mock contracts] Contract not verified, deployed locally.
+[DEPLOY Mock contracts] Done!
+[DEPLOY Paymaster] Deployer zkWallet: 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049
+[DEPLOY Paymaster] Deployer ethWallet: 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049
+[DEPLOY Paymaster] paymaster contract address: 0xf2FcC18ED5072b48C0a076693eCa72fE840b3981
+[DEPLOY Paymaster] owner is: 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049
+[DEPLOY Paymaster] dAPI Proxies set
+[DEPLOY Paymaster] Contract not verified, deployed locally.
+[DEPLOY Paymaster] Done!
+[DEPLOY zkAuction contracts] deploy auction factory
+[DEPLOY Auction Factory] NODE_ENV: test
+[DEPLOY Auction Factory] On local testnet we use a rich wallet to delpoy: 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049
+[DEPLOY Auction Factory] Local testnet we user wallet to delpoy: 0xBbb41D8d9a64558Bdc6C7C9bD92f4ec810C6d0BF
+[DEPLOY Auction Factory] Deployer zkWallet: 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049
+[DEPLOY Auction Factory] Deployer ethWallet: 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049
+[DEPLOY Auction Factory] Auction Factory contract address: 0x5fE58d975604E6aF62328d9E505181B94Fc0718C
+[DEPLOY Auction Factory] Contract not verified, deployed locally.
+[DEPLOY Auction Factory] Done!
+[Add Founds] NODE_ENV: test
+[Add Founds] Rich wallet is: 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049
+[Add Founds] Local wallet is: 0xBbb41D8d9a64558Bdc6C7C9bD92f4ec810C6d0BF
+[Add Founds] Local wallet diff balance is : 1.0
+[Add Founds] Paymaster wallet diff balance is : 1.0
+[Add Founds] give to 0xBbb41D8d9a64558Bdc6C7C9bD92f4ec810C6d0BF USDC 100 from 0x111C3E89Ce80e62EE88318C2804920D4c96f92bb
+[Add Founds] give to 0xBbb41D8d9a64558Bdc6C7C9bD92f4ec810C6d0BF DAI 100 from 0x4B5DF730c2e6b28E17013A1485E5d9BC41Efe021
+[Add Founds] DONE
+[DEPLOY zkAuction contracts] Done!
+Done in 27.63s
+```
+
+Fill [.env](./.env) with updated values (use [.env.example](./.env.example) as a template) 
+Fill [vite .env](./frontend/.env)  (use [.env.devel](./.env.development) as a template)
+
 ## Front end
 
 Install deps and run localy:

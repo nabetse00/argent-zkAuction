@@ -78,7 +78,7 @@ describe("Auction", function () {
         ]);
 
         // Auction factory contract
-        auctionFactory = await deployContract(deployer, "AuctionFactory", [usdc.address, dai.address, paymaster.address]);
+        auctionFactory = await deployContract(deployer, "AuctionFactory", [usdc.address, dai.address, paymaster.address, userWallet.address]);
 
 
         // add tokens and auction Factory to allowed list

@@ -10,8 +10,21 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/icons": "^5.1.4",
+    "@argent/era-multicall": "^0.1.0",
+    "@argent/login": "^0.1.0-beta.4",
+    "@types/node": "*",
+    "@web3-onboard/argent": "argentlabs/web3-onboard-argent",
+    "@web3-onboard/core": "^2.20.4",
+    "@web3-onboard/injected-wallets": "^2.10.2",
+    "@web3-onboard/react": "^2.8.9",
+    "antd": "^5.7.0",
+    "ethers": "5",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.14.1",
+    "web3.storage": "^4.5.4",
+    "zksync-web3": "^0.14.3"
   },
   "devDependencies": {
     "@types/react": "^18.2.14",
@@ -22,7 +35,10 @@
     "eslint": "^8.44.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.1",
+    "rollup": "^3.26.2",
+    "rollup-plugin-polyfill-node": "^0.12.0",
     "typescript": "^5.0.2",
-    "vite": "^4.4.0"
+    "vite": "^4.4.0",
+    "vite-plugin-node-polyfills": "^0.9.0"
   }
 }

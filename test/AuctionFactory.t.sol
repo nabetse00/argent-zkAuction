@@ -50,7 +50,7 @@ contract AuctionFactoryTest is Test, ERC721Holder {
 
         paymaster = new AuctionPaymaster(address(this), address(usdc), address(dai), address(this));
 
-        auctionFactory = new AuctionFactory(address(usdc), address(dai), payable(address(paymaster)));
+        auctionFactory = new AuctionFactory(address(usdc), address(dai), payable(address(paymaster)), address(this));
         paymaster.addToAllowedContracts(address(auctionFactory));
         assertEq(auctionFactory.USDC_ADDR(), address(usdc));
         assertEq(auctionFactory.DAI_ADDR(), address(dai));
@@ -127,6 +127,12 @@ contract AuctionFactoryTest is Test, ERC721Holder {
             auctionFactory.AUCTION_ITEMS_ADDR()
         ).ownerOf(cfg_itemTokenId);
         assertEq(owener_of_item, address(auction));
+
+        uint256 oldBal = MyERC20(bidToken).balanceOf(address(this));
+        auctionFactory.withdrawFees(payable(address(this)));
+        uint256 newBal = MyERC20(bidToken).balanceOf(address(this));
+
+        assertEq(newBal - oldBal, fee);
     }
 
     function test_invalid_createAuction(
@@ -188,5 +194,10 @@ contract AuctionFactoryTest is Test, ERC721Holder {
             _duration
         );
         assertNotEq(address(auctionFactory.getAuctions()[0]), address(0));
+
+        // withdraw founds
+
+
+
     }
 }

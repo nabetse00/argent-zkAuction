@@ -350,7 +350,8 @@ contract Auction is IAuction, ERC721Holder, ReentrancyGuard {
         // transfer tokens to address
         uint256 bal = IERC20Metadata(bidToken).balanceOf(address(this));
         if (bal > 0) {
-            IERC20Metadata(bidToken).transferFrom(address(this), receiver, bal);
+            bool success = IERC20Metadata(bidToken).transfer(receiver, bal);
+            require(success, "[Auction] Rescue failed to withdraw Auction tokens.");
         }
         if (auctionItems.ownerOf(config.itemTokenId) == address(this)) {
             _transferItemTo(receiver);
@@ -358,7 +359,7 @@ contract Auction is IAuction, ERC721Holder, ReentrancyGuard {
         bal = address(this).balance;
         if (bal > 0) {
             (bool sent, ) = receiver.call{value: bal}("");
-            require(sent, "[Auction] Rescue Failed to send Ether");
+            require(sent, "[Auction] Rescue failed to send Ether");
         }
     }
 
