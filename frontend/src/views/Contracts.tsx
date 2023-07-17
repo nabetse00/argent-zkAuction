@@ -31,7 +31,7 @@ export default function Contracts() {
         <List
             itemLayout="horizontal"
             dataSource={data}
-            renderItem={(item, index) => (
+            renderItem={(item, _index) => (
                 <List.Item>
                     <List.Item.Meta
                         avatar={<Avatar src={item.avatar} />}
