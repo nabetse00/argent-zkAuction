@@ -93,13 +93,14 @@ export default function Auction(props: { wallet: WalletState, auctionAddress: Ad
                     src={imgUrl}
                 />
             </div>}
-            title={json?.product_name}
+            title={`${auctionCfg?.itemTokenId} - ${json?.product_name}`}
             actions={auctionStatus != AuctionStatus.ENDED ?[
                 <><SettingOutlined key="setting" onClick={placeBidAction} /> Bid</>,
                 <><EditOutlined key="edit" onClick={buyItNowAction} />Buy Now</>,
             ]: [<><EditOutlined key="edit" onClick={withdrawAction} />WithDraw</>]}
         >
-            <Statistic title="Description" value={`${json?.product_model} ${json?.product_manufacturer}: ${json?.product_description}`} />
+            <Statistic title="Description" value={`${json?.product_description}`} />
+            <Statistic title="Model" value={`${json?.product_model} - ${json?.product_manufacturer}`} />
             {auctionStatus != AuctionStatus.ENDED ?
                 <Space align="center" direction="horizontal" size={"middle"} >
                     <Statistic title="Current Bid" value={highestBindingBid} prefix={"$"} />

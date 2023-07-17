@@ -275,3 +275,11 @@ MyProxy deployment is estimated to cost 0.00005049675 ETH [ ~ $0.0943 ]
 
 Done in 70.78s.
 ```
+
+you can also use:
+
+```console
+ ./test_hardhat.sh 
+```
+
+This removes temp folders, forcing a contract recompilation.

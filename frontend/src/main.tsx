@@ -14,6 +14,7 @@ import { Web3OnboardProvider, init} from '@web3-onboard/react'
 import argentModule from "@web3-onboard/argent";
 import injectedModule from '@web3-onboard/injected-wallets'
 import AuctionsView from './views/AuctionsView.tsx';
+import Contracts from './views/Contracts.tsx';
 
 const BASE = '/'
 
@@ -32,6 +33,10 @@ const router = createHashRouter([
     {
       path: `${BASE}auctions`,
       element: <AuctionsView />,
+    },
+    {
+      path: `${BASE}contracts`,
+      element: <Contracts />,
     },
     ]
   },

@@ -21,14 +21,14 @@ export enum Methods {
 }
 
 const mode = import.meta.env.MODE
-let usdcAddr = ""
-let daiAddr = ""
-let auctionFactoryAddr = ""
-let paymasterAddr = ""
-let ethUsd = ""
-let usdcUsd = ""
-let daiUsd = ""
-let rich = ""
+export let usdcAddr = ""
+export let daiAddr = ""
+export let auctionFactoryAddr = ""
+export let paymasterAddr = ""
+export let ethUsd = ""
+export let usdcUsd = ""
+export let daiUsd = ""
+export let rich = ""
 
 if (mode == "development") {
     usdcAddr = import.meta.env.VITE_USDC_LOCAL

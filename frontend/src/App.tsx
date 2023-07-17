@@ -5,7 +5,7 @@ import logo from './assets/svg/logo-no-background-color.svg'
 
 import { FileAddOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import type { MenuProps, ThemeConfig } from 'antd';
-import { Breadcrumb, App as AntdApp, ConfigProvider, Layout, Menu, theme } from 'antd';
+import { App as AntdApp, ConfigProvider, Layout, Menu, theme } from 'antd';
 
 
 import { Link, Outlet } from 'react-router-dom';
@@ -25,6 +25,12 @@ const items: MenuProps['items'] = [
   {
     label: <Link to="/auctions"> Auctions List</Link>,
     key: 'auctions',
+    icon: <UnorderedListOutlined />,
+    disabled: false,
+  },
+  {
+    label: <Link to="/contracts"> Contracts List</Link>,
+    key: 'contracts',
     icon: <UnorderedListOutlined />,
     disabled: false,
   },
@@ -62,11 +68,6 @@ export default function App() {
             <Login />
           </Header>
           <Content style={{ padding: '0 50px', }}>
-            <Breadcrumb style={{ margin: '16px 0' }}>
-              <Breadcrumb.Item>Home</Breadcrumb.Item>
-              <Breadcrumb.Item>List</Breadcrumb.Item>
-              <Breadcrumb.Item>App</Breadcrumb.Item>
-            </Breadcrumb>
             <Layout style={{ padding: '24px 0', background: globalToken.colorBgContainer }}>
               <Sider style={{ background: globalToken.colorBgContainer }} width={200}>
                 <Menu
