@@ -3,6 +3,11 @@
 ![Argent zkAuction](./images/logo-color.png)
 This project was scaffolded with [zksync-cli](https://github.com/matter-labs/zksync-cli).
 
+## Introduction
+
+Argent zkSync Auction is a Auction page which leverages and showcases the power of account abstraction to 
+offer user web3 power and web2 familiar and simple UX.
+
 ## Features
 
 This project showcases features of zkSync and Argent wallet.
@@ -13,7 +18,7 @@ This project showcases features of zkSync and Argent wallet.
 The example app is an item auction with a one clic buy it now button.
 
 Please follow: 
-- [Video](http://video.demo) 
+- [Video](https://www.youtube.com/watch?v=W5TdIEQ49v8) 
 - [Demo site](https://nabetse00.github.io/argent-zkAuction/)
 
 For more details.

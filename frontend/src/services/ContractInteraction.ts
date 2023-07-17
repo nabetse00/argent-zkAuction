@@ -310,6 +310,7 @@ export async function buyItNow(wallet: WalletState, auctionAddr: Address, buyItP
     });
 
     const gasPrice = await provider.getGasPrice();
+    
 
     const calls = [
         await token.connect(signer).populateTransaction.approve(
@@ -332,7 +333,7 @@ export async function buyItNow(wallet: WalletState, auctionAddr: Address, buyItP
                 maxPriorityFeePerGas: ethers.BigNumber.from(0),
                 maxFeePerGas: gasPrice,
                 // from estimation
-                gasLimit: gasApprove?.gasLimit.mul(10),
+                gasLimit: gasApprove?.gasLimit.mul(20),
                 customData: {
                     gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
                     paymasterParams: paymasterParamsPlaceBid,
@@ -408,7 +409,7 @@ export async function placeBid(wallet: WalletState, auctionAddr: Address) {
                 maxPriorityFeePerGas: ethers.BigNumber.from(0),
                 maxFeePerGas: gasPrice,
                 // from estimation
-                gasLimit: gasApprove?.gasLimit.mul(20),
+                gasLimit: gasApprove?.gasLimit.mul(10),
                 customData: {
                     gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
                     paymasterParams: paymasterParamsPlaceBid,
