@@ -212,7 +212,7 @@ export async function withdraw(wallet: WalletState, auctionAddr: Address) {
                     type: "ApprovalBased",
                     token: token.address,
                     // Set a large allowance just for estimation
-                    minimalAllowance: ethers.utils.parseEther("1000"),
+                    minimalAllowance: ethers.utils.parseUnits("100", decimals),
                     innerInput: new Uint8Array(),
                 }),
             },
