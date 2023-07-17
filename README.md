@@ -3,6 +3,21 @@
 ![Argent zkAuction](./images/logo-color.png)
 This project was scaffolded with [zksync-cli](https://github.com/matter-labs/zksync-cli).
 
+## Features
+
+This project showcases features of zkSync and Argent wallet.
+
+- Custom Paymaster: allows to pay fees in DAI and USDC, only for allowed contracts
+- Argent wallet multicalls: one clic for approval and execution.
+
+The example app is an item auction with a one clic buy it now button.
+
+Please follow: 
+- [Video](http://video.demo) 
+- [Demo site](http://web.demo)
+
+For more details.
+
 ## Project structure
 
 - `/contracts`: smart contracts.
@@ -31,6 +46,15 @@ A Paymaster contract that allow to pay fees of allowed contracts un DAI or USDC
 - [mocks](./contracts/mocks/) folder for mock contracts, only used when testing.
 - [Greeter](./contracts/Greeter.sol) simple greeter test contract, not used in tesnet.
 
+zkSync ERA tesnet deployed contract:
+- PAYMASTER => [0x176166463bf8def8bb0d2F1311c7EfEDdC823e21](https://goerli.explorer.zksync.io/address/0x176166463bf8def8bb0d2F1311c7EfEDdC823e21)
+- AUCTION_FACTORY [0xC006e415498A3D65Df9BF9a7F5F5d06187DC7F1E](https://goerli.explorer.zksync.io/address/0xC006e415498A3D65Df9BF9a7F5F5d06187DC7F1E)
+
+Remember AuctionFactory creates its own NFT representing Auctions items:
+[0x5A628202dC10A66375871E5e5DB4555129B21b19](https://goerli.explorer.zksync.io/address/0x5A628202dC10A66375871E5e5DB4555129B21b19)
+
+And Auction contracts are added when you create an Auction.
+
 ## Deployement
 
 Use deployment command for local testing
@@ -45,7 +69,7 @@ for ZkSyncEra testnet:
 yarn deploy-zkauction-testnet
 ```
 
-Output:
+Output for localnet:
 
 ```console
 yarn run v1.22.19
@@ -93,7 +117,17 @@ Done in 27.63s
 ```
 
 Fill [.env](./.env) with updated values (use [.env.example](./.env.example) as a template) 
-Fill [vite .env](./frontend/.env)  (use [.env.devel](./.env.development) as a template)
+Fill [vite .env](./frontend/.env)  (use [.env.development](./.env.development) as a template)
+
+Add funds if needed (localnet):
+```console
+yarn add-funds
+```
+
+And prepare Approvals for TESTNET with:
+```console
+yarn deploy-post-testnet
+```
 
 ## Front end
 
@@ -241,8 +275,3 @@ MyProxy deployment is estimated to cost 0.00005049675 ETH [ ~ $0.0943 ]
 
 Done in 70.78s.
 ```
-
-
-
-
-## 
