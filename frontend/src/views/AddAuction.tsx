@@ -3,7 +3,7 @@ import UploadFile from '../components/Upload';
 import TextArea from 'antd/es/input/TextArea';
 import { useState } from 'react';
 import { useConnectWallet } from '@web3-onboard/react';
-import { Methods, createAuction, estimateGas, ItemData } from '../services/ContractInteraction';
+import { createAuction, ItemData } from '../services/ContractInteraction';
 import { uploadJson } from '../services/ipfs';
 import { useNavigate } from "react-router-dom";
 
@@ -24,7 +24,7 @@ export default function AddAuction() {
   const [{ wallet }] = useConnectWallet()
   const [creating, setCreating] = useState<boolean>(false)
 
-  const [auctionData, setAuctionData] = useState<AuctionData>()
+  const [_auctionData, setAuctionData] = useState<AuctionData>()
 
   const navigate = useNavigate();
 
@@ -130,6 +130,7 @@ export default function AddAuction() {
             noStyle
             rules={[{ required: true, message: 'Product fotos must be uploaded' }]}
           >
+            {/* @ts-ignore */}
             <UploadFile />
           </Form.Item>
         </Form.Item>

@@ -2,7 +2,6 @@ import { useConnectWallet } from "@web3-onboard/react"
 import { useEffect, useState } from "react"
 import { getAuctionItems, getAuctionsAddresses } from "../services/ContractInteraction"
 import Auction from "../components/Auction"
-import { getEnvironmentData } from "worker_threads"
 import { WalletState } from "@web3-onboard/core"
 import { Row } from "antd"
 

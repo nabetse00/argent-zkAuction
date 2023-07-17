@@ -5,6 +5,9 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 // https://vitejs.dev/config/
 export default defineConfig({
   base:'/ARGENT-ZKAUCTION/',
+  build: {
+    target: 'esnext'
+  },
   plugins: [react(), nodePolyfills()],
   define: {
     "process.env": {},

@@ -3,8 +3,7 @@ import Login from './components/Login'
 import logo from './assets/svg/logo-no-background-color.svg'
 
 
-import { createElement } from 'react';
-import { AppstoreOutlined, FileAddOutlined, LaptopOutlined, MailOutlined, NotificationOutlined, SettingOutlined, UnorderedListOutlined, UserOutlined } from '@ant-design/icons';
+import { FileAddOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import type { MenuProps, ThemeConfig } from 'antd';
 import { Breadcrumb, App as AntdApp, ConfigProvider, Layout, Menu, theme } from 'antd';
 
@@ -41,7 +40,7 @@ const config: ThemeConfig = {
 };
 
 // By static function
-const { getDesignToken, useToken } = theme;
+const { getDesignToken} = theme;
 const globalToken = getDesignToken(config);
 
 

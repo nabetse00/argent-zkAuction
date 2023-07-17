@@ -1,25 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useConnectWallet } from '@web3-onboard/react'
-import { ethers } from 'ethers'
 import { Button, Spin } from 'antd'
 import { LoginOutlined, LogoutOutlined } from '@ant-design/icons'
 
-import type {
-  TokenSymbol
-} from '@web3-onboard/common'
 import { Web3Provider } from 'zksync-web3'
-
-
-interface Account {
-  address: string,
-  balance: Record<TokenSymbol, string> | null,
-  ens?: { name: string | undefined, avatar: string | undefined }
-}
 
 export default function Login() {
   const [{ wallet, connecting }, connect, disconnect, updateBalance] = useConnectWallet()
-  const [ethersProvider, setProvider] = useState<Web3Provider | null>()
-  const [account, setAccount] = useState<Account | null>({ address: "", balance: { "": "" } })
+  const [_ethersProvider, setProvider] = useState<Web3Provider | null>()
+  //const [account, setAccount] = useState<Account | null>({ address: "", balance: { "": "" } })
 
 
   useEffect(() => {
@@ -35,11 +24,6 @@ export default function Login() {
   useEffect(() => {
     if (wallet?.provider) {
       console.log(wallet.accounts)
-      setAccount({
-        address: wallet.accounts[0].address,
-        balance: wallet.accounts[0].balance
-        //ens: { name, avatar: avatar?.url }
-      })
     }
   }, [wallet])
 

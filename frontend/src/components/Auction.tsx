@@ -1,15 +1,11 @@
-import { App, Card, Row, Space, Statistic } from "antd";
-import Meta from "antd/es/card/Meta";
+import { App, Card, Space, Statistic } from "antd";
 import { useEffect, useState } from "react";
 import { Address } from "zksync-web3/build/src/types";
 import { AuctionConfig, AuctionJson, AuctionStatus, buyItNow, getAuctionConfig, getAuctionHighestBider, getAuctionHighestBinding, getAuctionStatus, getTokenUri, placeBid, withdraw } from "../services/ContractInteraction";
 import { WalletState } from "@web3-onboard/core";
-import { Wallet } from "ethers";
-import { error } from "console";
 import { getImageUrl, getJsonFile } from "../services/ipfs";
-import { EditOutlined, EllipsisOutlined, SettingOutlined } from "@ant-design/icons";
+import { EditOutlined, SettingOutlined } from "@ant-design/icons";
 import Countdown from "antd/es/statistic/Countdown";
-import { useNavigate } from "react-router-dom";
 
 
 

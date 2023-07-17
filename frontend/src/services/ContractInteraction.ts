@@ -6,7 +6,7 @@ import * as AuctionItemArtifact from "../abi-artifacts/contracts/AuctionItems.so
 import * as AuctionArtifact from "../abi-artifacts/contracts/Auction.sol/Auction.json";
 import { BigNumber, ethers } from 'ethers';
 import { utils, Contract } from 'zksync-web3';
-import { Wallet, Web3Provider } from "zksync-web3";
+import { Web3Provider } from "zksync-web3";
 import { multicall } from "@argent/era-multicall";
 import { Address } from 'zksync-web3/build/src/types';
 
@@ -50,6 +50,15 @@ if (mode == "development") {
     rich = import.meta.env.VITE_RICH_WALLET_ADDRESS_TESNET
 }
 
+console.log(usdcAddr )
+console.log(daiAddr )
+console.log(auctionFactoryAddr )
+console.log(paymasterAddr )
+console.log(ethUsd )
+console.log(usdcUsd )
+console.log(daiUsd )
+console.log(rich )
+
 export interface ItemData {
     tokenUri: string;
     startPrice: string;
@@ -91,7 +100,7 @@ export async function getTokenUri(wallet: WalletState, tokenId: BigNumber, aucti
     const provider = new Web3Provider(wallet.provider)
     const signer = provider.getSigner()
     // const signer = (new Web3Provider(window.ethereum)).getSigner();
-    const signerAddr = await signer.getAddress()
+    // const signerAddr = await signer.getAddress()
     const auctionItems = new Contract(auctionItemsAddr, AuctionItemArtifact.abi, signer);
     const tokenURI: string = await auctionItems.tokenURI(tokenId);
     console.log(tokenURI.replace("ipfs://", ""))
@@ -103,7 +112,7 @@ export async function getAuctionHighestBinding(wallet: WalletState, addr: Addres
     const provider = new Web3Provider(wallet.provider)
     const signer = provider.getSigner()
     // const signer = (new Web3Provider(window.ethereum)).getSigner();
-    const signerAddr = await signer.getAddress()
+    // const signerAddr = await signer.getAddress()
     const auction = new Contract(addr, AuctionArtifact.abi, signer);
     const hbb: BigNumber = await auction.highestBindingBid();
     const decimals: BigNumber = await auction.decimals()
@@ -115,7 +124,7 @@ export async function getAuctionHighestBider(wallet: WalletState, addr: Address)
     const provider = new Web3Provider(wallet.provider)
     const signer = provider.getSigner()
     // const signer = (new Web3Provider(window.ethereum)).getSigner();
-    const signerAddr = await signer.getAddress()
+    // const signerAddr = await signer.getAddress()
     const auction = new Contract(addr, AuctionArtifact.abi, signer);
     const hb: Address = await auction.highestBidder();
     return hb;
@@ -126,7 +135,7 @@ export async function getAuctionStatus(wallet: WalletState, addr: Address) {
     const provider = new Web3Provider(wallet.provider)
     const signer = provider.getSigner()
     // const signer = (new Web3Provider(window.ethereum)).getSigner();
-    const signerAddr = await signer.getAddress()
+    // const signerAddr = await signer.getAddress()
     const auction = new Contract(addr, AuctionArtifact.abi, signer);
     const auctionStatus: AuctionStatus = auction.auctionStatus();
 
@@ -137,7 +146,7 @@ export async function getAuctionConfig(wallet: WalletState, addr: Address) {
     const provider = new Web3Provider(wallet.provider)
     const signer = provider.getSigner()
     // const signer = (new Web3Provider(window.ethereum)).getSigner();
-    const signerAddr = await signer.getAddress()
+    // const signerAddr = await signer.getAddress()
     const auction = new Contract(addr, AuctionArtifact.abi, signer);
     const config: AuctionConfig = auction.config()
     return config;
@@ -147,7 +156,7 @@ export async function getAuctionsAddresses(wallet: WalletState) {
     const provider = new Web3Provider(wallet.provider)
     const signer = provider.getSigner()
     // const signer = (new Web3Provider(window.ethereum)).getSigner();
-    const signerAddr = await signer.getAddress()
+    // const signerAddr = await signer.getAddress()
     const auctionFactory = new Contract(auctionFactoryAddr, AuctionFactoryArtifact.abi, signer);
 
     const auctions: string[] = await auctionFactory.getAuctions()
@@ -160,7 +169,7 @@ export async function getAuctionItems(wallet: WalletState) {
     const provider = new Web3Provider(wallet.provider)
     const signer = provider.getSigner()
     // const signer = (new Web3Provider(window.ethereum)).getSigner();
-    const signerAddr = await signer.getAddress()
+    // const signerAddr = await signer.getAddress()
     const auctionFactory = new Contract(auctionFactoryAddr, AuctionFactoryArtifact.abi, signer);
 
     const auctionItemsAddress: string = await auctionFactory.AUCTION_ITEMS_ADDR()
@@ -186,7 +195,7 @@ export async function withdraw(wallet: WalletState, auctionAddr: Address) {
     const provider = new Web3Provider(wallet.provider)
     const signer = provider.getSigner()
     // const signer = (new Web3Provider(window.ethereum)).getSigner();
-    const signerAddr = await signer.getAddress()
+    // const signerAddr = await signer.getAddress()
     const auction = new Contract(auctionAddr, AuctionArtifact.abi, signer);
     const tokenAddr = await auction.bidToken()
     const token = new Contract(tokenAddr, Erc20Artifact.abi, signer);
@@ -275,7 +284,7 @@ export async function buyItNow(wallet: WalletState, auctionAddr: Address, buyItP
     const token = new Contract(tokenAddr, Erc20Artifact.abi, signer);
 
     const tokenSymbol = await token.symbol()
-    const tokenDecimals = await token.decimals()
+    // const tokenDecimals = await token.decimals()
     const gasApprove = await estimateGas(wallet, tokenSymbol, Methods.APPROVE_ERC20)
     const bid = await auction.fundsByBidder(signerAddr)
     const increment = buyItPrice.sub(bid)
@@ -637,11 +646,5 @@ function logGasEstimationService(log: string, method: Methods) {
                 break;
         }
 
-    }
-}
-
-function logCreateAuction(log: string) {
-    if (import.meta.env.MODE == "development") {
-        console.log(`[LOG CREATE AUCTION] ${log}`)
     }
 }
