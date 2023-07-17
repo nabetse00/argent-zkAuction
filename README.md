@@ -14,7 +14,7 @@ The example app is an item auction with a one clic buy it now button.
 
 Please follow: 
 - [Video](http://video.demo) 
-- [Demo site](http://web.demo)
+- [Demo site](https://nabetse00.github.io/argent-zkAuction/)
 
 For more details.
 
@@ -137,7 +137,7 @@ Install deps and run localy:
   yarn
   yarn dev
 ```
-A local server should at [http://localhost:5173/](http://localhost:5173/):
+A local server should at [http://localhost:5173/argent-zkAuction/](http://localhost:5173/argent-zkAuction/):
 ```
   VITE v4.4.3  ready in 652 ms
 
@@ -146,7 +146,7 @@ A local server should at [http://localhost:5173/](http://localhost:5173/):
   ➜  press h to show help
 ```
 
-Demo site [here](http://here.com)
+Demo site [here](https://nabetse00.github.io/argent-zkAuction/)
 
 ## Run foundry tests
 
