@@ -203,7 +203,7 @@ export async function withdraw(wallet: WalletState, auctionAddr: Address) {
     const tokenSymbol = await token.symbol()
     const decimals = await token.decimals();
     const decimalsBN = ethers.utils.parseUnits("1", decimals.toString())
-    const gasLimit = await auction.connect(signer).estimateGas.withdraw(
+    const gasLimit = await auction.connect(signer).estimateGas.withdrawAll(
         {
             customData: {
                 // TODO make an estimation of gasPerPubData
@@ -245,7 +245,7 @@ export async function withdraw(wallet: WalletState, auctionAddr: Address) {
 
 
     const calls = [
-        await auction.connect(signer).populateTransaction.withdraw(
+        await auction.connect(signer).populateTransaction.withdrawAll(
             {
                 maxPriorityFeePerGas: ethers.BigNumber.from(0),
                 maxFeePerGas: gasPrice,
