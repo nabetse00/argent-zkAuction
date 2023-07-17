@@ -35,7 +35,7 @@ export default function Contracts() {
                 <List.Item>
                     <List.Item.Meta
                         avatar={<Avatar src={item.avatar} />}
-                        title={<a href={`https://gobi-explorer.horizen.io/address/${item.description}`}>{item.title}</a>}
+                        title={<a href={`https://goerli.explorer.zksync.io/address/${item.description}`}>{item.title}</a>}
                         description={`${item.description}`}
                     />
                 </List.Item>
