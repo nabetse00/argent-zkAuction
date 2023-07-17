@@ -238,7 +238,7 @@ export async function withdraw(wallet: WalletState, auctionAddr: Address) {
         paymasterAddr, {
         type: "ApprovalBased",
         token: tokenAddr,
-        minimalAllowance: tokenFee,
+        minimalAllowance: tokenFee.mul(2),
         innerInput: new Uint8Array(),
     });
 
@@ -250,7 +250,7 @@ export async function withdraw(wallet: WalletState, auctionAddr: Address) {
                 maxPriorityFeePerGas: ethers.BigNumber.from(0),
                 maxFeePerGas: gasPrice,
                 // from estimation
-                gasLimit: gasLimit,
+                gasLimit: gasLimit.mul(2),
                 customData: {
                     gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
                     paymasterParams: paymasterParamsPlaceBid,
