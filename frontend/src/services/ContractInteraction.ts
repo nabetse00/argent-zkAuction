@@ -236,7 +236,7 @@ export async function withdraw(wallet: WalletState, auctionAddr: Address) {
         paymasterAddr, {
         type: "ApprovalBased",
         token: tokenAddr,
-        minimalAllowance: tokenFee.mul(2),
+        minimalAllowance: tokenFee.mul(20),
         innerInput: new Uint8Array(),
     });
 
@@ -362,8 +362,8 @@ export async function placeBid(wallet: WalletState, auctionAddr: Address) {
     const token = new Contract(tokenAddr, Erc20Artifact.abi, signer);
 
     const tokenSymbol = await token.symbol()
-    const gasApprove = await estimateGas(wallet, tokenSymbol, Methods.APPROVE_ERC20)
     const increment = await auction.getMinimalIncrementTokens()
+    const gasApprove = await estimateGas(wallet, tokenSymbol, Methods.APPROVE_ERC20, increment)
     console.log(`incement: ${increment}`)
     console.log(`symbols: ${tokenSymbol}`)
     console.log(`signer: ${signerAddr}`)
@@ -518,7 +518,7 @@ export async function createAuction(values: ItemData, wallet: WalletState, token
 
 }
 
-export async function estimateGas(wallet: WalletState, tokenSymbol: "USDC" | "DAI", method: Methods) {
+export async function estimateGas(wallet: WalletState, tokenSymbol: "USDC" | "DAI", method: Methods, value?:BigNumber) {
     logGasEstimationService("dev mode", method)
     if (wallet?.provider) {
         const provider = new Web3Provider(wallet.provider, 'any')
@@ -557,7 +557,7 @@ export async function estimateGas(wallet: WalletState, tokenSymbol: "USDC" | "DA
             case Methods.APPROVE_ERC20:
                 gasLimit = await token.connect(signer).estimateGas.approve(
                     auctionFactoryAddr,
-                    auction_fee,
+                    value? value:auction_fee,
                     {
                         customData: {
                             // TODO make an estimation of gasPerPubData
