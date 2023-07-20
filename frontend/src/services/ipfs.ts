@@ -3,10 +3,12 @@ import { Web3Storage } from "web3.storage";
 
 import { MessageInstance } from "antd/es/message/interface";
 import { AuctionJson } from "./ContractInteraction";
+const MAX_RETRY = 10;
 
 
 export async function uploadJson(obj: Object, message: MessageInstance): Promise<string | undefined> {
     const client = new Web3Storage({ token: `${import.meta.env.VITE_WEB3_API}` })
+    const rootCid = ""
     try {
         //const obj = { hello: 'world' }
         const blob = new Blob([JSON.stringify(obj)], { type: 'application/json' })
@@ -17,17 +19,13 @@ export async function uploadJson(obj: Object, message: MessageInstance): Promise
         const rootCid = await client.put([upfile])
         const info = await client.status(rootCid)
         console.log(`satus info ${info}`)
-        const res = await client.get(rootCid) // Promise<Web3Response | null>
-        const files = await res.files() // Promise<Web3File[]>
-        for (const file of files) {
-            console.log(`WEB3: ${file.cid} ${file.name} ${file.size}`)
-        }
-        message.success(`Json file successfully uploaded ${formatCid(rootCid)}`);
-        return files[0].cid;
+
     } catch (e: any) {
         message.error(`Files upload failed. ${e.message}`);
         console.error(e);
     }
+    const result = await getFileFromCid(client, rootCid, message)
+    return result;
 };
 
 export function formatCid(cid: string) {
@@ -39,7 +37,7 @@ export async function getJsonFile(cid: string) {
     const res = await client.get(cid)
     const files = await res.files();
     const url = `https://${files[0].cid}.ipfs.w3s.link`
-    const json:AuctionJson = await fetch(
+    const json: AuctionJson = await fetch(
         url
         , {
             //mode: 'no-cors',
@@ -68,3 +66,28 @@ export async function getImageUrl(cid: string) {
     return url;
 }
 
+
+export async function getFileFromCid(client: any, rootCid: string,
+    message: MessageInstance, retryCount: number = 1): Promise<string | undefined> {
+    const currRetry = typeof retryCount === 'number' ? retryCount : 1;
+    await delay(2000)
+    try {
+        const res = await client.get(rootCid) // Promise<Web3Response | null>
+        const files = await res.files() // Promise<Web3File[]>
+        for (const file of files) {
+            console.log(`WEB3: ${file.cid} ${file.name} ${file.size}`)
+        }
+        message.success(`Json file successfully uploaded ${formatCid(rootCid)}`);
+        return files[0].cid;
+    } catch (e: any) {
+        if (currRetry > MAX_RETRY) {
+            message.error(`Files upload failed. ${e.message}`);
+            console.error(e);
+        }
+        return getFileFromCid(client, rootCid, message, currRetry + 1);
+    }
+}
+
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}

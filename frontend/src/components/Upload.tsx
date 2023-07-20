@@ -8,6 +8,7 @@ import { useState } from 'react';
 import type { UploadFile } from 'antd/es/upload/interface';
 // @ts-ignore
 import { Web3Storage } from "web3.storage";
+import { getFileFromCid } from '../services/ipfs';
 
 const client = new Web3Storage({ token: `${import.meta.env.VITE_WEB3_API}` })
 
@@ -36,6 +37,7 @@ export default function UploadFile(props: { value: string, onChange: (arg: strin
             const rootCid = await client.put(upfiles)
             const info = await client.status(rootCid)
             console.log(`satus info ${info}`)
+            await getFileFromCid(client, rootCid, message, 10)
             const res = await client.get(rootCid) // Promise<Web3Response | null>
             const files = await res.files() // Promise<Web3File[]>
             for (const file of files) {
