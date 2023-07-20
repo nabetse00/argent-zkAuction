@@ -232,8 +232,6 @@ export async function withdraw(wallet: WalletState, auctionAddr: Address) {
     // Calculating the amount of token as fees:
     const tokenFee = fee.mul(ETHUSD).div(TOKENUSD).mul(decimalsBN).div(ethers.utils.parseUnits("1", 18));
 
-
-
     const paymasterParamsPlaceBid = utils.getPaymasterParams(
         paymasterAddr, {
         type: "ApprovalBased",
@@ -241,8 +239,6 @@ export async function withdraw(wallet: WalletState, auctionAddr: Address) {
         minimalAllowance: tokenFee.mul(2),
         innerInput: new Uint8Array(),
     });
-
-
 
     const calls = [
         await auction.connect(signer).populateTransaction.withdrawAll(
@@ -409,7 +405,7 @@ export async function placeBid(wallet: WalletState, auctionAddr: Address) {
                 maxPriorityFeePerGas: ethers.BigNumber.from(0),
                 maxFeePerGas: gasPrice,
                 // from estimation
-                gasLimit: gasApprove?.gasLimit.mul(10),
+                gasLimit: gasApprove?.gasLimit.mul(100),
                 customData: {
                     gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
                     paymasterParams: paymasterParamsPlaceBid,
