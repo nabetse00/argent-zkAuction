@@ -4,19 +4,20 @@ import { Web3Storage } from "web3.storage";
 import { MessageInstance } from "antd/es/message/interface";
 import { AuctionJson } from "./ContractInteraction";
 const MAX_RETRY = 10;
+const DELAY_MS = 20000
 
 
 export async function uploadJson(obj: Object, message: MessageInstance): Promise<string | undefined> {
     const client = new Web3Storage({ token: `${import.meta.env.VITE_WEB3_API}` })
-    const rootCid = ""
+    let rootCid = ""
     try {
         //const obj = { hello: 'world' }
         const blob = new Blob([JSON.stringify(obj)], { type: 'application/json' })
-        console.log(`${import.meta.env.VITE_WEB3_API}`)
+        // console.log(`${import.meta.env.VITE_WEB3_API}`)
 
         const upfile = new File([blob], 'item.json')
 
-        const rootCid = await client.put([upfile])
+        rootCid = await client.put([upfile])
         const info = await client.status(rootCid)
         console.log(`satus info ${info}`)
 
@@ -70,8 +71,9 @@ export async function getImageUrl(cid: string) {
 export async function getFileFromCid(client: any, rootCid: string,
     message: MessageInstance, retryCount: number = 1): Promise<string | undefined> {
     const currRetry = typeof retryCount === 'number' ? retryCount : 1;
-    await delay(2000)
+    await delay(DELAY_MS)
     try {
+        console.log(`get file [${rootCid}]`)
         const res = await client.get(rootCid) // Promise<Web3Response | null>
         const files = await res.files() // Promise<Web3File[]>
         for (const file of files) {
@@ -83,6 +85,7 @@ export async function getFileFromCid(client: any, rootCid: string,
         if (currRetry > MAX_RETRY) {
             message.error(`Files upload failed. ${e.message}`);
             console.error(e);
+            return
         }
         return getFileFromCid(client, rootCid, message, currRetry + 1);
     }

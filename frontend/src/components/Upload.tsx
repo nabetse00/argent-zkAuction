@@ -12,7 +12,6 @@ import { getFileFromCid } from '../services/ipfs';
 
 const client = new Web3Storage({ token: `${import.meta.env.VITE_WEB3_API}` })
 
-
 export default function UploadFile(props: { value: string, onChange: (arg: string) => void }) {
     const { message } = App.useApp();
 
@@ -25,7 +24,7 @@ export default function UploadFile(props: { value: string, onChange: (arg: strin
 
             const upfiles: RcFile[] = [];
 
-            console.log(`${import.meta.env.VITE_WEB3_API}`)
+            //console.log(`${import.meta.env.VITE_WEB3_API}`)
 
             fileList.forEach((file) => {
                 if (file.originFileObj) {
